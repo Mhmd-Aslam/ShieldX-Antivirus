@@ -5,3 +5,15 @@ requires-python = ">=3.13"
 name = "project-av"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "yara-python" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "yara-python", specifier = ">=4.5.1" }]
+
+[[package]]
+name = "yara-python"
+version = "4.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/3a/0d2970e76215ab7a835ebf06ba0015f98a9d8e11b9969e60f1ca63f04ba5/yara_python-4.5.1.tar.gz", hash = "sha256:52ab24422b021ae648be3de25090cbf9e6c6caa20488f498860d07f7be397930", size = 550202 }

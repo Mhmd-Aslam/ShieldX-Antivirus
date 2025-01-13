@@ -1,0 +1,3 @@
+[submodule "vendor/signature-base"]
+	path = vendor/signature-base
+	url = git@github.com:Neo23x0/signature-base.git
