@@ -2,15 +2,59 @@ version = 1
 requires-python = ">=3.13"
 
 [[package]]
+name = "capstone"
+version = "5.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/27/45/d811f0f3b345c8882b9179f7e310f222ba6af45f0cc729028cbf35c6ce03/capstone-5.0.3.tar.gz", hash = "sha256:1f15616c0528f5268f2dc0a81708483e605ce71961b02a01a791230b51fe862d", size = 2943858 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/40/503cdbc0b38c5b8b5bcad47ae507b70cecbb18365a82470a46f425788061/capstone-5.0.3-py3-none-macosx_10_9_universal2.whl", hash = "sha256:5dc6b5f4d85a2ba2330473529d7b4faccd71470b489fd19a539c20b74f3c9924", size = 2176874 },
+    { url = "https://files.pythonhosted.org/packages/60/3f/89f13db42cd24af1c80831b6ac978a8a42ad860a35cc461ec009c281e8f3/capstone-5.0.3-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:5917b00ddb0b3a665bcb7a623ee08bcaf4ddec783c5d2ca69f72278d6de38d2c", size = 1180331 },
+    { url = "https://files.pythonhosted.org/packages/36/79/ddc8a36238791e58ec31a13c10887447b56819d934ab00d6e1371a2e94f1/capstone-5.0.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:76658b66a5f0275c942cd4daf35dca7520387689f588f127020c9130d76c4ddf", size = 1192365 },
+    { url = "https://files.pythonhosted.org/packages/22/bc/39d69c65b7d58157d0c3acad9b929a3f0852c84e44b0e25b6fb89a9e1a7d/capstone-5.0.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:237fef7e20906bad09286554c7f8a5a744adeec4d658c5e33938bf9241b5f076", size = 2829855 },
+    { url = "https://files.pythonhosted.org/packages/24/f4/ae2d072d39664b7c32da9c8877f7d204692565f7c844da10e70c47730191/capstone-5.0.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a6b7f3ec2346a60475d9d043b437ace5e6688fc9c4d45387476104bd2c231040", size = 2921407 },
+    { url = "https://files.pythonhosted.org/packages/7f/1b/1b200d7a32de3b2bf61ee0316385aa566d698d20af99d8e2e00e5ec4b144/capstone-5.0.3-py3-none-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:1f25e23052d5fa5b6709f7111d7f1250131fb5dac878b8249a4637e6ab953129", size = 2941774 },
+    { url = "https://files.pythonhosted.org/packages/d8/82/dd45915b0de636ef949b9d56bd529ae52987d74db1c2d2b7feb4dee322f6/capstone-5.0.3-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:aebb35f0cfb808aac24d2e3c745be43bcedbb863ecb0192d720faa8002983544", size = 2840714 },
+    { url = "https://files.pythonhosted.org/packages/6b/e0/d3b617dd552a802760d63e29392c217266505f531c799f4b4cf3e9906eef/capstone-5.0.3-py3-none-musllinux_1_2_i686.whl", hash = "sha256:8d45fdf4ae11197234eedbd81742bd4650924f9bb3abee0b238ea63dad8001cc", size = 2937106 },
+    { url = "https://files.pythonhosted.org/packages/00/88/3459e1124a7c1bdc02fa2870ffeecdd0fa2be2b4b3382732cd3e3b2e92f2/capstone-5.0.3-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:63e8544d7500b889a5feb6f7c9a939723663107dd3360ad18f36a3f6985cfd26", size = 2895850 },
+    { url = "https://files.pythonhosted.org/packages/35/29/f751bb52b73b0a2e6414ad4e9271fa0cba966e747c1f3351a9c46e9f1ca7/capstone-5.0.3-py3-none-win_amd64.whl", hash = "sha256:21d00dce9dc204a22126fe6f45a8894d03a6607182bc86f14fc9bd1d1d3897ed", size = 1270430 },
+]
+
+[[package]]
+name = "pefile"
+version = "2024.8.26"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/4f/2750f7f6f025a1507cd3b7218691671eecfd0bbebebe8b39aa0fe1d360b8/pefile-2024.8.26.tar.gz", hash = "sha256:3ff6c5d8b43e8c37bb6e6dd5085658d658a7a0bdcd20b6a07b1fcfc1c4e9d632", size = 76008 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/16/12b82f791c7f50ddec566873d5bdd245baa1491bac11d15ffb98aecc8f8b/pefile-2024.8.26-py3-none-any.whl", hash = "sha256:76f8b485dcd3b1bb8166f1128d395fa3d87af26360c2358fb75b80019b957c6f", size = 74766 },
+]
+
+[[package]]
 name = "project-av"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "capstone" },
+    { name = "pefile" },
+    { name = "python-magic" },
     { name = "yara-python" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "yara-python", specifier = ">=4.5.1" }]
+requires-dist = [
+    { name = "capstone", specifier = ">=5.0.3" },
+    { name = "pefile", specifier = ">=2024.8.26" },
+    { name = "python-magic", specifier = ">=0.4.27" },
+    { name = "yara-python", specifier = ">=4.5.1" },
+]
+
+[[package]]
+name = "python-magic"
+version = "0.4.27"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/db/0b3e28ac047452d079d375ec6798bf76a036a08182dbb39ed38116a49130/python-magic-0.4.27.tar.gz", hash = "sha256:c1ba14b08e4a5f5c31a302b7721239695b2f0f058d125bd5ce1ee36b9d9d3c3b", size = 14677 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/73/9f872cb81fc5c3bb48f7227872c28975f998f3e7c2b1c16e95e6432bbb90/python_magic-0.4.27-py2.py3-none-any.whl", hash = "sha256:c212960ad306f700aa0d01e5d7a325d20548ff97eb9920dcd29513174f0294d3", size = 13840 },
+]
 
 [[package]]
 name = "yara-python"
