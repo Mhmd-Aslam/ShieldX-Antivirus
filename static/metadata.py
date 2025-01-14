@@ -51,6 +51,7 @@ class PEAnalyzer(StaticAnalyzer):
             
             # Initialize disassembler for x64
             md = Cs(CS_ARCH_X86, CS_MODE_64)
+            md.skipdata = True
             
             # Disassemble the entire code section
             code_bytes = data[start_offset:start_offset + code_size]
