@@ -52,20 +52,14 @@ class PEAnalyzer(StaticAnalyzer):
             # Initialize disassembler for x64
             md = Cs(CS_ARCH_X86, CS_MODE_64)
             
-            # Enable additional details (optional)
-            md.detail = True
-            
             # Disassemble the entire code section
             code_bytes = data[start_offset:start_offset + code_size]
             
             for inst in md.disasm(code_bytes, start_offset+image_base):
-                if inst.bytes == b'\x00\x00':
-                    continue
-
                 yield {
                     "address": inst.address,
                     "mnemonic": inst.mnemonic,
-                    "bytes": inst.bytes.hex(" "),
+                    "bytes": inst.bytes,
                     "arguments": inst.op_str
                 }
                 
@@ -75,6 +69,9 @@ class PEAnalyzer(StaticAnalyzer):
 
     
 if __name__ == "__main__":
-    pe = PEAnalyzer("tests/test_sample.exe")
-    for instruction in pe.disassemble(pe.executable.sections[2]):
-        print(f"{hex(instruction["address"])}: {instruction["mnemonic"]} {instruction["arguments"]}")
+    pe = PEAnalyzer("tests/malware.exe")
+    for section in pe.executable.sections:
+        print(section)
+        for instruction in pe.disassemble(section):
+            print(f"{hex(instruction["address"])}:  {instruction["mnemonic"]} {instruction["arguments"]}")
+        print()
