@@ -1,5 +1,7 @@
 import pefile
 import peutils
+from elftools.elf.elffile import ELFFile
+from elftools.elf.sections import Section
 import magic
 from datetime import datetime
 from capstone import *
@@ -49,8 +51,7 @@ class PEAnalyzer(StaticAnalyzer):
         :param path: Path to the PE file.
         """
         super().__init__(path)
-        self.executable = pefile.PE(path) # Avoid wasting time on directories
-
+        self.executable = pefile.PE(path)
     def __str__(self):
         """
         Return a string representation of the PE file information.
@@ -74,6 +75,27 @@ class PEAnalyzer(StaticAnalyzer):
             "entry_point": hex(self.executable.OPTIONAL_HEADER.AddressOfEntryPoint),
             "image_base": hex(self.executable.OPTIONAL_HEADER.ImageBase)
         }
+    
+    @property
+    def sections(self):
+        """
+        Get information about the sections in the PE file.
+        
+        :return: List of dictionaries containing section information.
+        """
+        return self.executable.sections
+    
+    def get_section_by_name(self, name):
+        """
+        Get the section with the specified name.
+        
+        :param name: Name of the section to retrieve.
+        :return: Section with the specified name.
+        """
+        for section in self.executable.sections:
+            if bytes(name, "ascii") in section.Name:
+                return section
+        return None
     
     def disassemble(self, section: pefile.SectionStructure):
         """
@@ -106,3 +128,37 @@ class PEAnalyzer(StaticAnalyzer):
             })
 
         return instructions
+    
+class ELFAnalyzer(StaticAnalyzer):
+    def __init__(self, path):
+        super().__init__(path)
+        self.executable = ELFFile.load_from_path(path)
+
+    @property
+    def sections(self):
+        sections = []
+        for section in self.executable.iter_sections():
+            sections.append(section)
+        return sections
+    
+    def get_section_by_name(self, name):
+        return self.executable.get_section_by_name(name)
+
+    def disassemble(self, section: Section):
+        data = section.data()
+        md = Cs(CS_ARCH_X86, CS_MODE_64)
+        md.skipdata = True
+
+        instructions = []
+        for inst in md.disasm(data, section["sh_addr"]):
+            instructions.append({
+                "address": inst.address,
+                "mnemonic": inst.mnemonic,
+                "bytes": inst.bytes,
+                "arguments": inst.op_str
+            })
+
+        return instructions
+    
+    def __del__(self):
+        self.executable.close()
