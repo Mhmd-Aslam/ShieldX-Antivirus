@@ -3,7 +3,6 @@ import peutils
 import magic
 from datetime import datetime
 from capstone import *
-from typing import Dict
 
 class StaticAnalyzer:
     """Base class for all static analysis tasks"""
@@ -41,38 +40,27 @@ class PEAnalyzer(StaticAnalyzer):
         }
     
     def disassemble(self, section: pefile.SectionStructure):
-        try:
-            image_base = self.executable.OPTIONAL_HEADER.ImageBase
+        image_base = self.executable.OPTIONAL_HEADER.ImageBase
                 
-            data = self.executable.get_memory_mapped_image()
-            
-            start_offset = section.VirtualAddress
-            code_size = section.SizeOfRawData
-            
-            # Initialize disassembler for x64
-            md = Cs(CS_ARCH_X86, CS_MODE_64)
-            md.skipdata = True
-            
-            # Disassemble the entire code section
-            code_bytes = data[start_offset:start_offset + code_size]
-            
-            for inst in md.disasm(code_bytes, start_offset+image_base):
-                yield {
-                    "address": inst.address,
-                    "mnemonic": inst.mnemonic,
-                    "bytes": inst.bytes,
-                    "arguments": inst.op_str
-                }
-                
-        except Exception as e:
-            print(f"Disassembly error: {str(e)}")
-            return []
+        data = self.executable.get_memory_mapped_image()
+        
+        start_offset = section.VirtualAddress
+        code_size = section.SizeOfRawData
+        
+        # Initialize disassembler for x64
+        md = Cs(CS_ARCH_X86, CS_MODE_64)
+        md.skipdata = True
+        
+        # Disassemble the entire code section
+        code_bytes = data[start_offset:start_offset + code_size]
+        
+        instructions = []
+        for inst in md.disasm(code_bytes, start_offset+image_base):
+            instructions.append({
+                "address": inst.address,
+                "mnemonic": inst.mnemonic,
+                "bytes": inst.bytes,
+                "arguments": inst.op_str
+            })
 
-    
-if __name__ == "__main__":
-    pe = PEAnalyzer("tests/malware.exe")
-    for section in pe.executable.sections:
-        print(section)
-        for instruction in pe.disassemble(section):
-            print(f"{hex(instruction["address"])}:  {instruction["mnemonic"]} {instruction["arguments"]}")
-        print()
+        return instructions
