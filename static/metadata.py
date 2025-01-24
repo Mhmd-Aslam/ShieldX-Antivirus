@@ -1,7 +1,7 @@
 import pefile
 import peutils
 from elftools.elf.elffile import ELFFile
-from elftools.elf.sections import Section
+from elftools.elf.sections import Section, SymbolTableSection
 import magic
 from datetime import datetime
 from capstone import *
@@ -139,6 +139,11 @@ class PEAnalyzer(StaticAnalyzer):
             symbols.append(entry)
 
         return symbols
+
+    def get_import_symbol_by_name(self, name):
+        for symbol in self.import_symbols:
+            if symbol.dll == bytes(name, "ascii"):
+                return symbol
     
     @property
     def export_symbols(self):
@@ -182,6 +187,16 @@ class ELFAnalyzer(StaticAnalyzer):
             })
 
         return instructions
+
+    @property
+    def symbols(self):
+        symbols = []
+        for section in self.sections:
+            if type(section) is SymbolTableSection:
+                for symbol in section.iter_symbols():
+                    symbols.append(symbol)
+
+        return symbols
     
     def __del__(self):
         self.executable.close()

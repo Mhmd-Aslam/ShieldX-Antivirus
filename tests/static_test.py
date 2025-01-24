@@ -46,7 +46,21 @@ class TestStatic(unittest.TestCase):
         self.assertTrue(instructions[0]["address"] == 0x1040)
         self.assertTrue(instructions[-1]["address"] == 0x1152)
 
+    def test_get_import_symbol_by_name(self):
+        analyzer = metadata.PEAnalyzer("tests/assets/hello.exe")
+        symbol = analyzer.get_import_symbol_by_name("KERNEL32.dll")
+
+        self.assertTrue(symbol.dll == b'KERNEL32.dll')
+
+        imports = [imp.name for imp in symbol.imports]
+        self.assertTrue(b"FreeLibrary" in imports)
+
     def test_import_symbols_windows(self):
         analyzer = metadata.PEAnalyzer("tests/assets/hello.exe")
         
         self.assertTrue(analyzer.import_symbols[0].dll == b'KERNEL32.dll')
+
+    def test_symbols_linux(self):
+        analyzer = metadata.ELFAnalyzer("tests/assets/hello")
+
+        self.assertTrue("puts" in [symbol.name for symbol in analyzer.symbols])
