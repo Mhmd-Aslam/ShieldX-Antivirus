@@ -16,7 +16,8 @@ class StaticAnalyzer:
         """
         self.path = path
 
-    def get_strings(self):
+    @property
+    def strings(self):
         """
         Extract all strings from the file.
         
@@ -34,6 +35,7 @@ class StaticAnalyzer:
         """
         return magic.from_file(path)
     
+    @property
     def file_type(self):
         """
         Get the file type using the magic library.
@@ -128,6 +130,27 @@ class PEAnalyzer(StaticAnalyzer):
             })
 
         return instructions
+
+    @property
+    def import_symbols(self):
+        self.executable.parse_data_directories()
+        symbols = []
+        for entry in self.executable.DIRECTORY_ENTRY_IMPORT:
+            symbols.append(entry)
+
+        return symbols
+    
+    @property
+    def export_symbols(self):
+        self.executable.parse_data_directories()
+        symbols = []
+        try:
+            for entry in self.executable.DIRECTORY_ENTRY_EXPORT.symbols:
+                symbols.append(entry)
+
+            return symbols
+        except:
+            return []
     
 class ELFAnalyzer(StaticAnalyzer):
     def __init__(self, path):

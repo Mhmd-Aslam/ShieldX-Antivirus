@@ -45,3 +45,8 @@ class TestStatic(unittest.TestCase):
         self.assertTrue(len(instructions) > 0)
         self.assertTrue(instructions[0]["address"] == 0x1040)
         self.assertTrue(instructions[-1]["address"] == 0x1152)
+
+    def test_import_symbols_windows(self):
+        analyzer = metadata.PEAnalyzer("tests/assets/hello.exe")
+        
+        self.assertTrue(analyzer.import_symbols[0].dll == b'KERNEL32.dll')
