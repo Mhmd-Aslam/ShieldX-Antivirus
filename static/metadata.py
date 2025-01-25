@@ -5,6 +5,7 @@ from elftools.elf.sections import Section, SymbolTableSection
 import magic
 from datetime import datetime
 from capstone import *
+import hashlib
 
 class StaticAnalyzer:
     """Base class for all static analysis tasks"""
@@ -43,6 +44,17 @@ class StaticAnalyzer:
         :return: File type as a string.
         """
         return magic.from_file(self.path)
+
+    @property
+    def hashes(self):
+        md5 = hashlib.new("md5")
+
+        with open(self.path, "rb") as file:
+            md5.update(file.read())
+
+            return {
+                "md5": md5.hexdigest()
+            }
 
 class PEAnalyzer(StaticAnalyzer):
     """Analyzer class for Windows executables"""

@@ -2,6 +2,11 @@ import unittest
 from static import metadata
 
 class TestStatic(unittest.TestCase):
+    def test_file_hashing(self):
+        analyzer = metadata.StaticAnalyzer("tests/assets/CoronaVirus.exe")
+
+        self.assertTrue(analyzer.hashes["md5"] == "055d1462f66a350d9886542d4d79bc2b")
+
     def test_windows_sections(self):
         analyzer = metadata.PEAnalyzer("tests/assets/hello.exe")
         self.assertTrue(len(analyzer.sections) > 0)
