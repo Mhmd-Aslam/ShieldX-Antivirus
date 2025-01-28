@@ -83,7 +83,7 @@ class PEAnalyzer(StaticAnalyzer):
         return {
             "machine_type": self.executable.FILE_HEADER.Machine,
             "timestamp": datetime.fromtimestamp(self.executable.FILE_HEADER.TimeDateStamp).strftime("%d/%m/%Y, %H:%M:%S"),
-            "file_type": super().file_type(),
+            "file_type": super().file_type,
             "packed": peutils.is_probably_packed(self.executable),
             "size_of_code": hex(self.executable.OPTIONAL_HEADER.SizeOfCode),
             "entry_point": hex(self.executable.OPTIONAL_HEADER.AddressOfEntryPoint),
