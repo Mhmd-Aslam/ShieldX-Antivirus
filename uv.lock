@@ -37,6 +37,7 @@ dependencies = [
     { name = "pefile" },
     { name = "pyelftools" },
     { name = "python-magic" },
+    { name = "qemu-qmp" },
     { name = "yara-python" },
 ]
 
@@ -46,6 +47,7 @@ requires-dist = [
     { name = "pefile", specifier = ">=2024.8.26" },
     { name = "pyelftools", specifier = ">=0.31" },
     { name = "python-magic", specifier = ">=0.4.27" },
+    { name = "qemu-qmp", specifier = ">=0.0.3" },
     { name = "yara-python", specifier = ">=4.5.1" },
 ]
 
@@ -65,6 +67,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/da/db/0b3e28ac047452d079d375ec6798bf76a036a08182dbb39ed38116a49130/python-magic-0.4.27.tar.gz", hash = "sha256:c1ba14b08e4a5f5c31a302b7721239695b2f0f058d125bd5ce1ee36b9d9d3c3b", size = 14677 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6c/73/9f872cb81fc5c3bb48f7227872c28975f998f3e7c2b1c16e95e6432bbb90/python_magic-0.4.27-py2.py3-none-any.whl", hash = "sha256:c212960ad306f700aa0d01e5d7a325d20548ff97eb9920dcd29513174f0294d3", size = 13840 },
+]
+
+[[package]]
+name = "qemu-qmp"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6b/6c/96c9c30e7bfef81de67ba82b569672c5c9547bcb895457bb24a5d3b8b28e/qemu.qmp-0.0.3.tar.gz", hash = "sha256:cbc88fbcc115ee943d84447d172c642da120220451416c2f621acf33df1e1010", size = 78802 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/80/85263c535be9f9de8104e567658b0879c063c3d9bde3a39a7d27beea00eb/qemu.qmp-0.0.3-py3-none-any.whl", hash = "sha256:9abf451e22c0964580135aef7e2b95c5da0bf63c692426da24fc38b56ff0ac8e", size = 71139 },
 ]
 
 [[package]]

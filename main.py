@@ -1,21 +1,14 @@
-from static.metadata import PEAnalyzer
-import json
+from sandbox.guest import GuestMachine
+import asyncio
 
-def generate_report(analyzer):
-    report = {
-        "file_type": analyzer.file_type,
-        "hashes": analyzer.hashes,
-        "info": analyzer.info(),
-        "sections": [{"name": section.Name.decode().strip(), "size": section.SizeOfRawData} for section in analyzer.sections],
-        "import_symbols": [{"dll": entry.dll.decode(), "imports": [str(imp.name) for imp in entry.imports]} for entry in analyzer.import_symbols],
-    }
-    return report
+async def main():
+  client = GuestMachine("sandbox/images/arch-linux.qcow2", "arch-linux")
+  await client.start_vm_process()
+
+  with client.listener() as listener:
+    print(await listener.get())
+
+  await client.disconnect()
 
 if __name__ == "__main__":
-    analyzer = PEAnalyzer("./tests/assets/CoronaVirus.exe")
-    report = generate_report(analyzer)
-    
-    with open("report.json", "w") as report_file:
-        json.dump(report, report_file, indent=4)
-
-    print("Report generated and saved to report.json")
+  asyncio.run(main())
