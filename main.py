@@ -3,12 +3,14 @@ import asyncio
 
 async def main():
   client = GuestMachine("sandbox/images/arch-linux.qcow2", "arch-linux")
-  await client.start_vm_process()
+  try:
+    await client.start_vm_process()
 
-  with client.listener() as listener:
-    print(await listener.get())
+    #await client.execute_guest_command("")
 
-  await client.disconnect()
+    await client.disconnect()
+  except Exception:
+    await client.disconnect()
 
 if __name__ == "__main__":
   asyncio.run(main())
