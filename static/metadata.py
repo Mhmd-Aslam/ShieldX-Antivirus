@@ -1,10 +1,11 @@
 import pefile
 import peutils
 from elftools.elf.elffile import ELFFile
-from elftools.elf.sections import Section
+from elftools.elf.sections import Section, SymbolTableSection
 import magic
 from datetime import datetime
 from capstone import *
+import hashlib
 
 class StaticAnalyzer:
     """Base class for all static analysis tasks"""
@@ -16,7 +17,8 @@ class StaticAnalyzer:
         """
         self.path = path
 
-    def get_strings(self):
+    @property
+    def strings(self):
         """
         Extract all strings from the file.
         
@@ -34,6 +36,7 @@ class StaticAnalyzer:
         """
         return magic.from_file(path)
     
+    @property
     def file_type(self):
         """
         Get the file type using the magic library.
@@ -41,6 +44,17 @@ class StaticAnalyzer:
         :return: File type as a string.
         """
         return magic.from_file(self.path)
+
+    @property
+    def hashes(self):
+        md5 = hashlib.new("md5")
+
+        with open(self.path, "rb") as file:
+            md5.update(file.read())
+
+            return {
+                "md5": md5.hexdigest()
+            }
 
 class PEAnalyzer(StaticAnalyzer):
     """Analyzer class for Windows executables"""
@@ -69,7 +83,7 @@ class PEAnalyzer(StaticAnalyzer):
         return {
             "machine_type": self.executable.FILE_HEADER.Machine,
             "timestamp": datetime.fromtimestamp(self.executable.FILE_HEADER.TimeDateStamp).strftime("%d/%m/%Y, %H:%M:%S"),
-            "file_type": super().file_type(),
+            "file_type": super().file_type,
             "packed": peutils.is_probably_packed(self.executable),
             "size_of_code": hex(self.executable.OPTIONAL_HEADER.SizeOfCode),
             "entry_point": hex(self.executable.OPTIONAL_HEADER.AddressOfEntryPoint),
@@ -128,6 +142,32 @@ class PEAnalyzer(StaticAnalyzer):
             })
 
         return instructions
+
+    @property
+    def import_symbols(self):
+        self.executable.parse_data_directories()
+        symbols = []
+        for entry in self.executable.DIRECTORY_ENTRY_IMPORT:
+            symbols.append(entry)
+
+        return symbols
+
+    def get_import_symbol_by_name(self, name):
+        for symbol in self.import_symbols:
+            if symbol.dll == bytes(name, "ascii"):
+                return symbol
+    
+    @property
+    def export_symbols(self):
+        self.executable.parse_data_directories()
+        symbols = []
+        try:
+            for entry in self.executable.DIRECTORY_ENTRY_EXPORT.symbols:
+                symbols.append(entry)
+
+            return symbols
+        except:
+            return []
     
 class ELFAnalyzer(StaticAnalyzer):
     def __init__(self, path):
@@ -159,6 +199,16 @@ class ELFAnalyzer(StaticAnalyzer):
             })
 
         return instructions
+
+    @property
+    def symbols(self):
+        symbols = []
+        for section in self.sections:
+            if type(section) is SymbolTableSection:
+                for symbol in section.iter_symbols():
+                    symbols.append(symbol)
+
+        return symbols
     
     def __del__(self):
         self.executable.close()

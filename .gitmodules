@@ -1,3 +1,6 @@
 [submodule "vendor/signature-base"]
 	path = vendor/signature-base
 	url = git@github.com:Neo23x0/signature-base.git
+[submodule "vendor/reversinglabs"]
+	path = vendor/reversinglabs
+	url = https://github.com/reversinglabs/reversinglabs-yara-rules.git

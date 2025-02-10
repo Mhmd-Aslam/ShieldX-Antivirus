@@ -9,5 +9,6 @@ dependencies = [
     "pefile>=2024.8.26",
     "pyelftools>=0.31",
     "python-magic>=0.4.27",
+    "qemu-qmp>=0.0.3",
     "yara-python>=4.5.1",
 ]
