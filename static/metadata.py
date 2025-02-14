@@ -48,12 +48,16 @@ class StaticAnalyzer:
     @property
     def hashes(self):
         md5 = hashlib.new("md5")
+        sha256 = hashlib.new("sha256")
 
         with open(self.path, "rb") as file:
-            md5.update(file.read())
+            contents = file.read()
+            md5.update(contents)
+            sha256.update(contents)
 
             return {
-                "md5": md5.hexdigest()
+                "md5": md5.hexdigest(),
+                "sha256": sha256.hexdigest()
             }
 
 class PEAnalyzer(StaticAnalyzer):

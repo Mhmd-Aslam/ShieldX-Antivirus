@@ -1,16 +1,6 @@
-from sandbox.guest import GuestMachine
-import asyncio
+from dynamic import virustotal
+import json
 
-async def main():
-  client = GuestMachine("sandbox/images/arch-linux.qcow2", "arch-linux")
-  try:
-    await client.start_vm_process()
-
-    #await client.execute_guest_command("")
-
-    await client.disconnect()
-  except Exception:
-    await client.disconnect()
-
-if __name__ == "__main__":
-  asyncio.run(main())
+client = virustotal.Client("tests/assets/CrimsonRAT.exe")
+with open("dynamic.json", "w") as file:
+  file.write(json.dumps(client.mitre_tactics()))
