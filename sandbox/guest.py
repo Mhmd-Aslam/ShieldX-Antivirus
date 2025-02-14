@@ -42,21 +42,22 @@ class GuestMachine:
             f"qemu-system-x86_64 "
             f"-drive file={self.image_path},format=qcow2 "
             f"-m 2G "
-            f"-qmp unix:qmp.sock,server=on,wait=off "
+            f"-qmp unix:/tmp/qmp.sock,server=on,wait=off "
             f"-chardev socket,path=/tmp/qga.sock,server=on,wait=off,id=qga0 "
             f"-device virtio-serial "
             f"-device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 "
+            f"-nic user,model=virtio-net-pci "
             f"-daemonize "
             f"-enable-kvm"
         )
         subprocess.run(cmd)
-        await self.qmp_client.connect("qmp.sock")
+        await self.qmp_client.connect("/tmp/qmp.sock")
         self.qga_client.connect("/tmp/qga.sock")
 
         print(await self.execute_qmp_command("query-commands"))
         
         # Wait for guest agent to become ready
-        await self.wait_for_guest_agent(60*10)
+        await self.wait_for_guest_agent(60*1)
 
     async def wait_for_guest_agent(self, timeout=60):
         start_time = asyncio.get_event_loop().time()
@@ -68,6 +69,7 @@ class GuestMachine:
                 print(response)
                 if response["return"] == {}:
                     self.guest_agent_ready = True
+                    print("Guest is ready")
                     break
             except Exception as e:
                 print(e)
