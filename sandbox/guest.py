@@ -42,7 +42,7 @@ class GuestMachine:
             f"qemu-system-x86_64 "
             f"-drive file={self.image_path},format=qcow2 "
             f"-m 2G "
-            f"-qmp unix:/tmp/qmp.sock,server=on,wait=off "
+            f"-qmp unix:qmp.sock,server=on,wait=off "
             f"-chardev socket,path=/tmp/qga.sock,server=on,wait=off,id=qga0 "
             f"-device virtio-serial "
             f"-device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 "
@@ -51,7 +51,7 @@ class GuestMachine:
             f"-enable-kvm"
         )
         subprocess.run(cmd)
-        await self.qmp_client.connect("/tmp/qmp.sock")
+        await self.qmp_client.connect("qmp.sock")
         self.qga_client.connect("/tmp/qga.sock")
 
         print(await self.execute_qmp_command("query-commands"))

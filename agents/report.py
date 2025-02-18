@@ -1,0 +1,70 @@
+from static.metadata import StaticAnalyzer, ELFAnalyzer, PEAnalyzer
+from dynamic.virustotal import Client
+
+class ReportGenerator:
+  def __init__(self, path):
+    self.path = path
+    self.staticAnalyzer = StaticAnalyzer(path)
+    self.type = ""
+    
+    if "PE32" in self.staticAnalyzer.file_type:
+      self.binaryAnalyzer = PEAnalyzer(path)
+      self.type = "pe"
+    elif "ELF" in self.staticAnalyzer.file_type:
+      self.binaryAnalyzer = ELFAnalyzer(path)
+      self.type = "elf"
+
+  def generate_static_report(self):
+    """
+    Generate a static report using the appropriate analyzer.
+    
+    :return: Dictionary containing static analysis information.
+    """
+    sections = []
+    for section in self.binaryAnalyzer.sections:
+      match self.type:
+        case "pe":
+          sections.append({
+            "name": section.Name.decode("utf-8", errors="ignore").rstrip("\x00"),
+            "size_of_raw_data": section.SizeOfRawData,
+            "number_of_relocations": section.NumberOfRelocations,
+            "virtual_address": section.VirtualAddress,
+            "entropy": section.get_entropy()
+          })
+        case "elf":
+          sections.append({
+            "name": section.name,
+            "size": section["sh_size"],
+            "address": section["sh_addr"],
+            "type": section["sh_type"]
+          })
+    import_symbols = []
+    if self.type == "pe":
+      import_symbols = [{
+        "dll": entry.dll.decode("utf-8", errors="ignore"),
+        "imports": [{
+          "name": imp.name.decode("utf-8", errors="ignore") if imp.name else None,
+          "address": hex(imp.address)
+        } for imp in entry.imports]
+      } for entry in self.binaryAnalyzer.import_symbols]
+
+    return {
+      "file_type": self.staticAnalyzer.file_type,
+      "sections": sections,
+      "import_symbols": import_symbols
+    }
+
+  def generate_dynamic_report(self):
+    """
+    Generate a dynamic report using the VirusTotal client.
+    
+    :return: Dictionary containing dynamic analysis information.
+    """
+    client = Client(self.path)
+    behaviour_reports = client.behaviour_reports()["data"]["attributes"]
+    mitre_tactics = client.mitre_tactics()["data"]["Zenbox"]
+
+    return {
+      "behaviour_reports": behaviour_reports,
+      "attack_tactics": mitre_tactics
+    }
