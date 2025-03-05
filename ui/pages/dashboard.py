@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame, QSizePolicy
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame, QSizePolicy, QFileDialog
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from ui.notification_dialog import NotificationDialog
@@ -66,12 +66,25 @@ class DashboardPage(QWidget):
         scan_layout.setSpacing(20)  # Spacing between scan buttons
         scan_layout.setContentsMargins(20, 20, 20, 20)  # Margins around the scan buttons
 
-        for name, icon_path in [("Quick Scan", "ui/logos/Quick_Scan.png"),
-                                ("Full Scan", "ui/logos/Full_Scan.png"),
-                                ("Removable Scan", "ui/logos/Removable_Scan.png"),
-                                ("Custom Scan", "ui/logos/Custom_Scan.png")]:
-            button = ScanButton(icon_path, name)
-            scan_layout.addWidget(button)
+        # Quick Scan button
+        self.quick_scan_button = ScanButton("ui/logos/Quick_Scan.png", "Quick Scan")
+        self.quick_scan_button.clicked.connect(lambda: print("Quick Scan started!"))
+        scan_layout.addWidget(self.quick_scan_button)
+
+        # Full Scan button
+        self.full_scan_button = ScanButton("ui/logos/Full_Scan.png", "Full Scan")
+        self.full_scan_button.clicked.connect(lambda: print("Full Scan started!"))
+        scan_layout.addWidget(self.full_scan_button)
+
+        # Removable Scan button
+        self.removable_scan_button = ScanButton("ui/logos/Removable_Scan.png", "Removable Scan")
+        self.removable_scan_button.clicked.connect(lambda: print("Removable Scan started!"))
+        scan_layout.addWidget(self.removable_scan_button)
+
+        # Custom Scan button
+        self.custom_scan_button = ScanButton("ui/logos/Custom_Scan.png", "Custom Scan")
+        self.custom_scan_button.clicked.connect(self.open_custom_scan_dialog)  # Connect to handler
+        scan_layout.addWidget(self.custom_scan_button)
 
         layout.addLayout(scan_layout)
 
@@ -100,6 +113,13 @@ class DashboardPage(QWidget):
 
         # Show the dialog
         self.notification_dialog.show()
+
+    def open_custom_scan_dialog(self):
+        #Handle Custom Scan button click.
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder for Custom Scan")
+        if folder_path:
+            # Trigger scan via MainWindow
+            self.main_window.start_scan("Custom Scan", [folder_path])
 
     def notifications_button_style(self):
         return (

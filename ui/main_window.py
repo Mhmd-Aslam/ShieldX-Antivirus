@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
-    QFrame, QStackedWidget
+    QFrame, QStackedWidget, QFileDialog
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPixmap
@@ -14,7 +14,7 @@ from ui.pages.graph import GraphPage
 from ui.pages.settings import SettingsPage
 from ui.pages.about import AboutPage
 from ui.pages.dashboard import DashboardPage
-
+from ui.pages.scanning import ScanningPage  # Import ScanningPage
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -42,25 +42,25 @@ class MainWindow(QMainWindow):
 
         # Sidebar Header (Logo + App Name)
         logo_name_layout = QHBoxLayout()
-        logo_name_layout.setSpacing(10)  # Space between logo and label
-        logo_name_layout.setContentsMargins(10, 0, 10, 0)  # Tight margins
+        logo_name_layout.setSpacing(10)
+        logo_name_layout.setContentsMargins(10, 0, 10, 0)
 
         # App Logo
         app_logo = QLabel()
         app_logo.setPixmap(QPixmap("ui/logos/app_logo.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        app_logo.setAlignment(Qt.AlignCenter)  # Center the logo vertically and horizontally
+        app_logo.setAlignment(Qt.AlignCenter)
 
         # App Name
         app_name = QLabel("Fytra Antivirus")
         app_name.setStyleSheet("font-size: 20px; font-weight: bold; color: white;")
-        app_name.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Align text to the left and center vertically
+        app_name.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         # Add widgets to the layout
         logo_name_layout.addWidget(app_logo)
         logo_name_layout.addWidget(app_name)
-        logo_name_layout.addStretch()  # Push content to the left
+        logo_name_layout.addStretch()
 
-        # Add the header layout to the sidebar
+        # Add header layout to sidebar
         sidebar_layout.addLayout(logo_name_layout)
 
         # Create QStackedWidget for pages
@@ -74,6 +74,7 @@ class MainWindow(QMainWindow):
             "Graph": GraphPage(),
             "Settings": SettingsPage(),
             "About": AboutPage(),
+            "Scanning": ScanningPage(scan_type="", scan_paths=[]),  # ScanningPage initialized
         }
 
         for name, page in self.pages.items():
@@ -94,6 +95,7 @@ class MainWindow(QMainWindow):
         add_files_button = QPushButton(" Add Files \n to Scan \n +")
         add_files_button.setStyleSheet(self.add_files_button_style())
         add_files_button.setFixedSize(110, 150)
+        add_files_button.clicked.connect(self.open_file_dialog)  # Connect button to open file dialog
         sidebar_layout.addWidget(add_files_button, alignment=Qt.AlignCenter)
 
         sidebar.setLayout(sidebar_layout)
@@ -132,6 +134,38 @@ class MainWindow(QMainWindow):
         self.active_button = button
         self.active_button.setStyleSheet(self.active_button_style())
         self.stacked_widget.setCurrentWidget(self.pages[page_name])
+
+    def open_file_dialog(self):
+        #Opens a file/directory selection dialog for adding files to scan.
+        file_paths, _ = QFileDialog.getOpenFileNames(self, "Select Files to Scan")
+        if file_paths:
+            print(f"Selected files: {file_paths}")  # Debugging output
+            # Add functionality to handle selected files here
+
+    def start_scan(self, scan_type, scan_paths):
+        """Start a scan and navigate to the ScanningPage."""
+        # Remove old ScanningPage
+        if "Scanning" in self.pages:
+            old_page = self.pages["Scanning"]
+            self.stacked_widget.removeWidget(old_page)
+            old_page.deleteLater()
+
+        # Create and add new ScanningPage
+        new_scan_page = ScanningPage(scan_type=scan_type, scan_paths=scan_paths)
+        self.pages["Scanning"] = new_scan_page
+        self.stacked_widget.addWidget(new_scan_page)
+
+        # Add "Scanning" to sidebar if missing
+        if "Scanning" not in self.page_buttons:
+            scan_button = QPushButton("Scanning")
+            scan_button.setStyleSheet(self.sidebar_button_style())
+            scan_button.clicked.connect(lambda: self.set_active_page("Scanning", scan_button))
+            self.page_buttons["Scanning"] = scan_button
+            sidebar_layout = self.centralWidget().layout().itemAt(0).itemAt(0).widget().layout()
+            sidebar_layout.insertWidget(len(sidebar_layout) - 1, scan_button)
+
+        # Navigate to ScanningPage
+        self.set_active_page("Scanning", self.page_buttons["Scanning"])
 
     def active_button_style(self):
         return (
