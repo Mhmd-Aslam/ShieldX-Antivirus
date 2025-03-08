@@ -1,40 +1,62 @@
-from langchain_groq import ChatGroq
+from langchain_groq.chat_models import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
+from typing import List
 import os
-import json
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-llama3 = ChatGroq(
-  model="llama-3.3-70b-versatile",
-  api_key=GROQ_API_KEY
+mixtral = ChatGroq(
+  model="llama3-70b-8192",
+  api_key=os.environ["GROQ_API_KEY"]
 )
 
-def summarize_analysis(static_analysis: dict, dynamic_analysis: dict):
-  system = """
-You are a summarizing agent that is used as a part of a larger antivirus system. You will be given json representing the output of static and dynamic analysis stages of the malware analysis. generate a summary of the report without omitting any detail.
-"""
+def summarizer_agent(report: dict, static: dict):
+  # Handle potentially missing keys with default empty values
+  tags = ",".join(report.get("tags", []) or [])
+  
+  mitre_attack_techniques = ""
+  if "mitre_attack_techniques" in report and report["mitre_attack_techniques"]:
+    for technique in report["mitre_attack_techniques"]:
+      if isinstance(technique, dict):
+        signature = technique.get("signature_description", "Unknown")
+        severity = technique.get("severity", "Unknown")
+        mitre_attack_techniques += f"{signature} - {severity}; "
+
+  memory_pattern_urls = ",".join(report.get("memory_pattern_urls", []) or [])
+  
+  registry_keys = ""
+  if "registry_keys_set" in report and report["registry_keys_set"]:
+    print(report["registry_keys_set"])
+    registry_keys = ",".join([item.get('key', '') for item in report["registry_keys_set"] if isinstance(item, dict) and 'key' in item])
 
   prompt_template = ChatPromptTemplate.from_messages([
-    ("system", system),
-    ("user", """
-     Static Analysis:
-     {static}
-     Dynamic Analysis:
-     {dynamic}""")
+    ("system", "You are a summarizing agent responsible for generating a summary of a report. Do not make any judgements on the given information; Present the information as is in a detailed manner. Ensure all the imported dlls, urls, registry keys and any other information is also included."),
+    ("human", """
+      TAGS:
+      {tags}
+      MITRE_ATTACK_TECHNIQUES:
+      {techniques}
+      MEMORY_PATTERN_URLS:
+      {urls}
+      REGISTRY_KEYS_SET:
+      {registry}
+      IMPORT_SYMBOLS:
+      {symbols}
+    """)
   ])
 
-  prompt = prompt_template.invoke({
-    "static": json.dumps(static_analysis),
-    "dynamic": json.dumps({
-      "tags": dynamic_analysis["tags"],
-      "verdicts": dynamic_analysis["verdicts"],
-      # "signature_matches": dynamic_analysis["signature_matches"]
-    })
-  })
+  print("summarizing")
 
-  response = llama3.invoke(prompt)
-  print(response.content)
+  chain = prompt_template | mixtral
+
+  result = chain.invoke({
+    "tags": tags,
+    "techniques": mitre_attack_techniques,
+    "urls": memory_pattern_urls,
+    "registry": registry_keys,
+    "symbols": static["import_symbols"]
+  }).content
+
+  print(result)
+  return result

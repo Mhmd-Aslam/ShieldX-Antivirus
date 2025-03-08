@@ -12,17 +12,27 @@ deepseek = ChatGroq(
   api_key=GROQ_API_KEY
 )
 
-
-
 def reason_malware_report(report: str):
   system_prompt = """
 You are a malware analysis agent that is part of a bigger antivirus module. You will be provided with a report containing the results of static and dynamic analysis of a malware sample. Based on the given report, generate a <result> resource.
 
-Format of report:
-{"file_type": string, ""}
+RULES FOR CONFIDENCE SCORES AND VERDICTS
+1. Do not label an executable as malware without proper reasoning for it. Only label an executable as malware if you're more than 60% sure it's malware.
+2. Start off with a low confidence score and add more confidence as you find more indicators of malicious behaviour.
+
+RESULT FORMAT
+<result>
+{{"is_malware": boolean, "confidence": number (0 to 100)}}
+</result>
 """
 
   prompt_template = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
-    ("user", "{report}")
+    ("user", "REPORT: {report}")
   ])
+
+  chain = prompt_template | deepseek
+
+  return chain.invoke({
+    "report": report
+  }).content
