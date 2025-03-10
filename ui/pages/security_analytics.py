@@ -20,7 +20,7 @@ class GraphPage(QWidget):
         # Page title (with transparent background)
         title_label = QLabel("Security Analytics")
         title_label.setFont(QFont("Arial", 24, QFont.Bold))
-        title_label.setStyleSheet("color: #3498DB; background: transparent;")
+        title_label.setStyleSheet("color: #ECF0F1; background: transparent;")
         main_layout.addWidget(title_label, alignment=Qt.AlignTop | Qt.AlignLeft)
 
         # Subtitle (with transparent background)

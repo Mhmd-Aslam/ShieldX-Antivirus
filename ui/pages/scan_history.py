@@ -19,7 +19,7 @@ class ScanHistoryPage(QWidget):
         # Page title
         title_label = QLabel("Scan History")
         title_label.setFont(QFont("Arial", 24, QFont.Bold))
-        title_label.setStyleSheet("color: #3498DB;")  # Light blue for the title
+        title_label.setStyleSheet("color: #ECF0F1;")  # Light blue for the title
         layout.addWidget(title_label)
 
         # Search and filter bar
