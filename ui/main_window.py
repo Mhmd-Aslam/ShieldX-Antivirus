@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet("background-color: #091e36; color: white;")
 
         self.active_button = None  # Track the currently active button
+        self.scan_button_added = False  # Track if the Scanning button has been added
 
         # Main Layout
         main_layout = QVBoxLayout()
@@ -74,7 +75,7 @@ class MainWindow(QMainWindow):
             "Graph": GraphPage(),
             "Settings": SettingsPage(),
             "About": AboutPage(),
-            "Scanning": ScanningPage(scan_type="", scan_paths=[]),  # ScanningPage initialized
+            # "Scanning": ScanningPage(scan_type="", scan_paths=[]),  # ScanningPage initialized dynamically
         }
 
         for name, page in self.pages.items():
@@ -136,7 +137,7 @@ class MainWindow(QMainWindow):
         self.stacked_widget.setCurrentWidget(self.pages[page_name])
 
     def open_file_dialog(self):
-        #Opens a file/directory selection dialog for adding files to scan.
+        """Opens a file/directory selection dialog for adding files to scan."""
         file_paths, _ = QFileDialog.getOpenFileNames(self, "Select Files to Scan")
         if file_paths:
             print(f"Selected files: {file_paths}")  # Debugging output
@@ -144,7 +145,9 @@ class MainWindow(QMainWindow):
 
     def start_scan(self, scan_type, scan_paths):
         """Start a scan and navigate to the ScanningPage."""
-        # Remove old ScanningPage
+        print(f"Starting scan: {scan_type} on paths: {scan_paths}")  # Debugging output
+
+        # Remove old ScanningPage if it exists
         if "Scanning" in self.pages:
             old_page = self.pages["Scanning"]
             self.stacked_widget.removeWidget(old_page)
@@ -155,17 +158,21 @@ class MainWindow(QMainWindow):
         self.pages["Scanning"] = new_scan_page
         self.stacked_widget.addWidget(new_scan_page)
 
-        # Add "Scanning" to sidebar if missing
-        if "Scanning" not in self.page_buttons:
+        # Add "Scanning" button to sidebar if it's the first scan
+        if not self.scan_button_added:
             scan_button = QPushButton("Scanning")
             scan_button.setStyleSheet(self.sidebar_button_style())
             scan_button.clicked.connect(lambda: self.set_active_page("Scanning", scan_button))
             self.page_buttons["Scanning"] = scan_button
             sidebar_layout = self.centralWidget().layout().itemAt(0).itemAt(0).widget().layout()
-            sidebar_layout.insertWidget(len(sidebar_layout) - 1, scan_button)
+            sidebar_layout.insertWidget(sidebar_layout.count() - 1, scan_button)  # Use count() instead of len()
+            self.scan_button_added = True  # Mark that the Scanning button has been added
 
         # Navigate to ScanningPage
         self.set_active_page("Scanning", self.page_buttons["Scanning"])
+
+        # Start the scanning process
+        new_scan_page.start_scan()
 
     def active_button_style(self):
         return (
