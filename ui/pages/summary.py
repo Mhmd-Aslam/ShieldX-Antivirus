@@ -18,7 +18,7 @@ class SummaryPage(QWidget):
         # Page title
         title_label = QLabel("Summary")
         title_label.setFont(QFont("Arial", 24, QFont.Bold))
-        title_label.setStyleSheet("color: #3498DB;")  # Light blue for the title
+        title_label.setStyleSheet("color: #ECF0F1;")  # Light blue for the title
         layout.addWidget(title_label)
 
         # Cards layout
@@ -42,7 +42,7 @@ class SummaryPage(QWidget):
         # Recent Scans Section
         recent_scans_label = QLabel("Recent Scans")
         recent_scans_label.setFont(QFont("Arial", 18, QFont.Bold))
-        recent_scans_label.setStyleSheet("color: #3498DB;")
+        recent_scans_label.setStyleSheet("color: #ECF0F1;")
         layout.addWidget(recent_scans_label)
 
         # Recent Scans Table

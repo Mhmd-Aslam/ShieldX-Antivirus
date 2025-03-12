@@ -10,7 +10,7 @@ from ui.pages.scan_history import ScanHistoryPage
 from ui.pages.summary import SummaryPage
 from ui.pages.top_threats import TopThreatsPage
 from ui.pages.system_health import SystemHealthPage
-from ui.pages.graph import GraphPage
+from ui.pages.security_analytics import GraphPage
 from ui.pages.settings import SettingsPage
 from ui.pages.about import AboutPage
 from ui.pages.dashboard import DashboardPage
@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
             "Summary": SummaryPage(),
             "Top Threats": TopThreatsPage(),
             "System Health": SystemHealthPage(),
-            "Graph": GraphPage(),
+            "Security Analytics": GraphPage(),
             "Settings": SettingsPage(),
             "About": AboutPage(),
             # "Scanning": ScanningPage(scan_type="", scan_paths=[]),  # ScanningPage initialized dynamically
