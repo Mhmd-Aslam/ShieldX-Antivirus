@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS safe_hashes(
+  id INTEGER PRIMARY KEY,
+  `hash` TEXT NOT NULL,
+  `path` TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS malware_hashes(
+  id INTEGER PRIMARY KEY,
+  `hash` TEXT NOT NULL,
+  confidence INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS report_cache(
+  id INTEGER PRIMARY KEY,
+  `hash` TEXT NOT NULL,
+  report TEXT NOT NULL
+)

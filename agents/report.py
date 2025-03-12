@@ -6,6 +6,9 @@ class ReportGenerator:
     self.path = path
     self.staticAnalyzer = StaticAnalyzer(path)
     self.type = ""
+    self.static_report = None
+    self.dynamic_report = None
+    self.hashes = self.staticAnalyzer.hashes
     
     if "PE32" in self.staticAnalyzer.file_type:
       self.binaryAnalyzer = PEAnalyzer(path)
@@ -20,6 +23,9 @@ class ReportGenerator:
     
     :return: Dictionary containing static analysis information.
     """
+    if self.static_report:
+      return self.static_report
+
     sections = []
     for section in self.binaryAnalyzer.sections:
       match self.type:
@@ -48,11 +54,14 @@ class ReportGenerator:
         } for imp in entry.imports]
       } for entry in self.binaryAnalyzer.import_symbols]
 
-    return {
+
+    self.static_report = {
       "file_type": self.staticAnalyzer.file_type,
       "sections": sections,
       "import_symbols": import_symbols
     }
+
+    return self.static_report
 
   def generate_dynamic_report(self):
     """
@@ -60,11 +69,16 @@ class ReportGenerator:
     
     :return: Dictionary containing dynamic analysis information.
     """
+    if self.dynamic_report:
+      return self.dynamic_report
+
     client = Client(self.path)
     behaviour_reports = client.behaviour_reports()["data"]["attributes"]
     mitre_tactics = client.mitre_tactics()["data"]["Zenbox"]
 
-    return {
+    self.dynamic_report = {
       "behaviour_reports": behaviour_reports,
       "attack_tactics": mitre_tactics
     }
+
+    return self.dynamic_report

@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-mixtral = ChatGroq(
+llama = ChatGroq(
   model="llama3-70b-8192",
   api_key=os.environ["GROQ_API_KEY"]
 )
@@ -48,7 +48,7 @@ def summarizer_agent(report: dict, static: dict):
 
   print("summarizing")
 
-  chain = prompt_template | mixtral
+  chain = prompt_template | llama
 
   result = chain.invoke({
     "tags": tags,
@@ -58,5 +58,4 @@ def summarizer_agent(report: dict, static: dict):
     "symbols": static["import_symbols"]
   }).content
 
-  print(result)
   return result

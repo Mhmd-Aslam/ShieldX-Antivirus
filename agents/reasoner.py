@@ -2,6 +2,8 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 import os
+import re
+import json
 
 load_dotenv()
 
@@ -33,6 +35,9 @@ RESULT FORMAT
 
   chain = prompt_template | deepseek
 
-  return chain.invoke({
+  output = chain.invoke({
     "report": report
   }).content
+
+  json_match = re.search(r'<result>\s*(.*?)\s*</result>', output)
+  return json.loads(json_match.group(1))
