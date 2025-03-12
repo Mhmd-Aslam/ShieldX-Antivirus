@@ -1,18 +1,14 @@
-from agents.summarizer import summarizer_agent
-from agents.reasoner import reason_malware_report
-from agents.report import ReportGenerator
+from agents.agent import MalwareAgent
+import time
 
 def main():
     # Path to the binary file to be analyzed
     binary_path = "tests/assets/DanaBot.exe"
+    malware_analyzer = MalwareAgent(binary_path)
 
-    # Generate reports
-    report_generator = ReportGenerator(binary_path)
-    static_report = report_generator.generate_static_report()
-    dynamic_report = report_generator.generate_dynamic_report()
-
-    # Summarize analysis
-    print(reason_malware_report(summarizer_agent(dynamic_report["behaviour_reports"], static_report)))
+    print(malware_analyzer.is_malware())
+    malware_analyzer.die()
+    time.sleep(0.1)
 
 if __name__ == "__main__":
     main()
