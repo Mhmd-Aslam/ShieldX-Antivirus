@@ -45,6 +45,9 @@ class MalwareAgent:
     return result
 
   def is_malware(self):
+    if not self.report_generator.scannable:
+      return False
+
     closest_matches = self.check_embeddings()
     for match in closest_matches:
       print(match[0]['distance'])

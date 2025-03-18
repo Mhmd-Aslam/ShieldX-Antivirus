@@ -1,15 +1,13 @@
-from agents.agent import MalwareAgent
-import time
+from scanner.scanner import Scanner, Directory
+
 
 def main():
-    # Path to the binary file to be analyzed
-    binary_path = "tests/assets/DanaBot.exe"
-    malware_analyzer = MalwareAgent(binary_path)
-
-    print(malware_analyzer.is_malware())
-    malware_analyzer.die()
-    time.sleep(0.1)
-
+    root = Directory.generate_directory_tree("./tests")
+    
+    scanner = Scanner()
+    for malware_path in scanner.full_scan(root):
+        print(malware_path)
+    
 if __name__ == "__main__":
     main()
 

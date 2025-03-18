@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from static.metadata import StaticAnalyzer
 import requests
 import os
+import json
 
 load_dotenv()
 
@@ -15,14 +16,20 @@ class Client:
         "accept": "application/json",
         "x-apikey": self.apiKey
       }, files={
-        "file": file
+        "file": f.read()
       })
 
-      staticAnalyzer = StaticAnalyzer(self.file)
-      self.hash = staticAnalyzer.hashes
-
       data = response.json()
+      print(data)
+
       self.analysisId = data["data"]["id"]
+
+      hash_response = requests.get(f"https://www.virustotal.com/api/v3/analyses/{self.analysisId}", headers={
+        "accept": "application/json",
+        "x-apikey": self.apiKey
+      })
+
+      self.hash = hash_response.json()["meta"]["file_info"]
 
   def behaviour_reports(self):
     response = requests.get(f"https://www.virustotal.com/api/v3/file_behaviours/{self.hash["sha256"]}_Zenbox", headers={
@@ -30,7 +37,10 @@ class Client:
       "x-apikey": self.apiKey
     })
 
-    return response.json()
+    data = response.json()
+    # with open("dynamic.json", "w") as file:
+    #   file.write(json.dumps(data))
+    return data
 
   def mitre_tactics(self):
     response = requests.get(f"https://www.virustotal.com/api/v3/files/{self.hash["sha256"]}/behaviour_mitre_trees", headers={

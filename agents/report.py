@@ -9,6 +9,7 @@ class ReportGenerator:
     self.static_report = None
     self.dynamic_report = None
     self.hashes = self.staticAnalyzer.hashes
+    self.scannable = True
     
     if "PE32" in self.staticAnalyzer.file_type:
       self.binaryAnalyzer = PEAnalyzer(path)
@@ -16,6 +17,8 @@ class ReportGenerator:
     elif "ELF" in self.staticAnalyzer.file_type:
       self.binaryAnalyzer = ELFAnalyzer(path)
       self.type = "elf"
+    else:
+      self.scannable = False
 
   def generate_static_report(self):
     """
@@ -27,6 +30,9 @@ class ReportGenerator:
       return self.static_report
 
     sections = []
+    if not self.binaryAnalyzer:
+      return None
+
     for section in self.binaryAnalyzer.sections:
       match self.type:
         case "pe":
@@ -71,6 +77,9 @@ class ReportGenerator:
     """
     if self.dynamic_report:
       return self.dynamic_report
+    
+    if not self.binaryAnalyzer:
+      return None
 
     client = Client(self.path)
     behaviour_reports = client.behaviour_reports()["data"]["attributes"]
