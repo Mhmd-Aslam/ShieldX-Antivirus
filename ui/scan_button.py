@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QPushButton, QLabel, QVBoxLayout, QSizePolicy, QFileDialog, QMessageBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from static.scanner import Scanner  # Import Scanner
+from scanner.scanner import Scanner  # Import Scanner
 from ui.pages.scanning import ScanningPage  # Import the new ScanningPage
 
 class ScanButton(QPushButton):
