@@ -1,11 +1,85 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QProgressBar, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton
 )
-from PySide6.QtCore import Qt, QTimer, QTime
+from PySide6.QtCore import Qt, QTimer, QTime, Signal, QObject
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtWidgets import QPushButton
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QSize
+from scanner.scanner import Scanner, Directory
+import threading
+import os
+import time
+
+# Worker class to handle background scanning
+class ScannerWorker(QObject):
+    progress_updated = Signal(int, int, dict)
+    scan_completed = Signal(list)
+    
+    def __init__(self, scan_paths):
+        super().__init__()
+        self.scan_paths = scan_paths
+        self.is_running = False
+        
+    def run_scan(self):
+        self.is_running = True
+        results = []
+        total_files = 0
+        processed_files = 0
+        threats_found = 0
+        
+        # Create the scanner inside the thread where it will be used
+        self.scanner = Scanner()
+        
+        # Prepare directories for scanning
+        directories = []
+        for path in self.scan_paths:
+            if os.path.isdir(path):
+                directories.append(Directory.generate_directory_tree(path))
+            else:
+                # Handle single file scan if needed
+                pass
+        
+        # Count total files to scan (approximate)
+        for directory in directories:
+            for root, _, files in os.walk(directory.path):
+                total_files += len(files)
+        
+        # Run the full scan
+        for directory in directories:
+            for malware_info in self.scanner.full_scan(directory):
+                if not self.is_running:
+                    break
+                
+                processed_files += 1
+                threats_found += 1
+                results.append(malware_info)
+                
+                # Calculate progress percentage
+                progress = int((processed_files / total_files) * 100) if total_files > 0 else 0
+                progress = min(progress, 100)  # Ensure we don't exceed 100%
+                
+                # Emit progress signal with scan details
+                self.progress_updated.emit(
+                    progress, 
+                    threats_found, 
+                    {"path": malware_info["path"], "status": "Infected", "threat": "Malware"}
+                )
+                
+                # Small sleep to avoid UI freezing
+                time.sleep(0.01)
+                
+            if not self.is_running:
+                break
+        
+        # Complete the scan if still running
+        if self.is_running:
+            self.scan_completed.emit(results)
+        
+        self.is_running = False
+        
+    def stop(self):
+        self.is_running = False
 
 class ScanningPage(QWidget):
     def __init__(self, scan_type, scan_paths, parent=None):
@@ -14,6 +88,10 @@ class ScanningPage(QWidget):
         self.scan_paths = scan_paths  # List of files/directories to scan
         self.start_time = QTime.currentTime()  # Track the start time of the scan
         self.result_label = None  # Add a class-level variable for the result label
+        self.scan_thread = None
+        self.scanner_worker = None
+        self.files_processed = 0
+        self.threats_detected = 0
         self.init_ui()
 
     def init_ui(self):
@@ -151,71 +229,107 @@ class ScanningPage(QWidget):
         self.start_scan()
 
     def start_scan(self):
-        # Simulate scanning progress using a QTimer
+        # Create a worker and thread for scanning
+        self.scanner_worker = ScannerWorker(self.scan_paths)
+        self.scanner_worker.progress_updated.connect(self.update_real_progress)
+        self.scanner_worker.scan_completed.connect(self.on_scan_completed)
+        
+        # Create and start a thread for scanning
+        self.scan_thread = threading.Thread(target=self.scanner_worker.run_scan)
+        self.scan_thread.daemon = True
+        self.scan_thread.start()
+        
+        # Start a timer just to update the elapsed time
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_progress)
-        self.timer.start(100)  # Update progress every 100ms
+        self.timer.timeout.connect(self.update_elapsed_time)
+        self.timer.start(1000)  # Update time every second
 
-    def update_progress(self):
-        # Increment progress bar value
-        current_value = self.progress_bar.value()
-        if current_value < 100:
-            self.progress_bar.setValue(current_value + 1)
-            self.update_scan_details(current_value + 1)
-        else:
-            self.timer.stop()
-            self.show_scan_results()
-
-    def update_scan_details(self, progress):
-        # Update files scanned, threats detected, elapsed time, and progress percentage
-        files_scanned = int(progress * 1000 / 100)  # Simulate file count
-        threats_detected = int(progress * 10 / 100)  # Simulate threat count
+    def update_elapsed_time(self):
+        # Update only the elapsed time
         elapsed_time = self.start_time.secsTo(QTime.currentTime())  # Calculate elapsed time in seconds
-
-        self.files_scanned_label.setText(f"Files Scanned: {files_scanned}")
-        self.threats_detected_label.setText(f"Threats Detected: {threats_detected}")
         self.elapsed_time_label.setText(f"Elapsed Time: {QTime(0, 0).addSecs(elapsed_time).toString('mm:ss')}")
-        self.progress_percentage_label.setText(f"{progress}%")  # Update progress percentage
 
-    def show_scan_results(self):
-        # Display scan results in the table
-        self.results_table.setRowCount(5)  # Simulate 5 results
-        for i in range(5):
-            file_item = QTableWidgetItem(f"File_{i + 1}.exe")
-            status_item = QTableWidgetItem("Scanned")
-            threat_item = QTableWidgetItem("No Threat")
+    def update_real_progress(self, progress, threats, file_info):
+        # Update UI with real scan progress
+        self.progress_bar.setValue(progress)
+        self.progress_percentage_label.setText(f"{progress}%")
+        
+        self.files_processed += 1
+        self.files_scanned_label.setText(f"Files Scanned: {self.files_processed}")
+        
+        self.threats_detected = threats
+        self.threats_detected_label.setText(f"Threats Detected: {self.threats_detected}")
+        
+        # Add result to table
+        row_position = self.results_table.rowCount()
+        self.results_table.insertRow(row_position)
+        
+        file_item = QTableWidgetItem(os.path.basename(file_info["path"]))
+        status_item = QTableWidgetItem(file_info["status"])
+        threat_item = QTableWidgetItem(file_info["threat"])
+        
+        # Make items non-editable
+        file_item.setFlags(file_item.flags() & ~Qt.ItemIsEditable)
+        status_item.setFlags(status_item.flags() & ~Qt.ItemIsEditable)
+        threat_item.setFlags(threat_item.flags() & ~Qt.ItemIsEditable)
+        
+        # Set row colors based on status
+        if file_info["status"] == "Infected":
+            file_item.setBackground(Qt.red)
+            status_item.setBackground(Qt.red)
+            threat_item.setBackground(Qt.red)
+        
+        self.results_table.setItem(row_position, 0, file_item)
+        self.results_table.setItem(row_position, 1, status_item)
+        self.results_table.setItem(row_position, 2, threat_item)
 
-            # Make items non-editable
-            file_item.setFlags(file_item.flags() & ~Qt.ItemIsEditable)
-            status_item.setFlags(status_item.flags() & ~Qt.ItemIsEditable)
-            threat_item.setFlags(threat_item.flags() & ~Qt.ItemIsEditable)
-
-            self.results_table.setItem(i, 0, file_item)
-            self.results_table.setItem(i, 1, status_item)
-            self.results_table.setItem(i, 2, threat_item)
-
+    def on_scan_completed(self, results):
+        # Called when scan is fully complete
+        self.timer.stop()
+        
+        # Ensure progress bar is at 100%
+        self.progress_bar.setValue(100)
+        self.progress_percentage_label.setText("100%")
+        
+        # Update scan info label
+        self.scan_info_label.setText(f"{self.scan_type} Complete")
+        
         # Add or update the result label
+        result_text = f"Scan Complete: {self.threats_detected} threats detected."
+        text_color = "red" if self.threats_detected > 0 else "green"
+        
         if self.result_label is None:
-            self.result_label = QLabel("Scan Complete: No threats detected.")
-            self.result_label.setStyleSheet("font-size: 18px; color: green;")
+            self.result_label = QLabel(result_text)
+            self.result_label.setStyleSheet(f"font-size: 18px; color: {text_color};")
             self.layout().addWidget(self.result_label)
         else:
-            self.result_label.setText("Scan Complete: No threats detected.")
+            self.result_label.setText(result_text)
+            self.result_label.setStyleSheet(f"font-size: 18px; color: {text_color};")
 
     def rescan(self):
         """Resets the scan and starts it again."""
+        # Stop the current scan if it's running
+        if self.scanner_worker and self.scan_thread and self.scan_thread.is_alive():
+            self.scanner_worker.stop()
+            self.scan_thread.join(timeout=1.0)
+        
         # Reset progress bar and labels
         self.progress_bar.setValue(0)
         self.progress_percentage_label.setText("0%")
         self.files_scanned_label.setText("Files Scanned: 0")
         self.threats_detected_label.setText("Threats Detected: 0")
         self.elapsed_time_label.setText("Elapsed Time: 00:00")
-
+        self.files_processed = 0
+        self.threats_detected = 0
+        
         # Clear the results table
         self.results_table.setRowCount(0)
-
+        
         # Reset the start time
         self.start_time = QTime.currentTime()
-
+        
+        # Update scan info label
+        self.scan_info_label.setText(f"{self.scan_type} in Progress...")
+        
         # Start the scan again
         self.start_scan()
