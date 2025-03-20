@@ -11,10 +11,10 @@ class ReportGenerator:
     self.hashes = self.staticAnalyzer.hashes
     self.scannable = True
     
-    if "PE32" in self.staticAnalyzer.file_type:
+    if "exe" in self.staticAnalyzer.file_type:
       self.binaryAnalyzer = PEAnalyzer(path)
       self.type = "pe"
-    elif "ELF" in self.staticAnalyzer.file_type:
+    elif "elf" in self.staticAnalyzer.file_type:
       self.binaryAnalyzer = ELFAnalyzer(path)
       self.type = "elf"
     else:

@@ -2,7 +2,7 @@ import pefile
 import peutils
 from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import Section, SymbolTableSection
-import magic
+import puremagic
 from datetime import datetime
 from capstone import *
 import hashlib
@@ -34,7 +34,7 @@ class StaticAnalyzer:
         :param path: Path to the file.
         :return: File type as a string.
         """
-        return magic.from_file(path)
+        return puremagic.what(path)
     
     @property
     def file_type(self):
@@ -43,7 +43,7 @@ class StaticAnalyzer:
         
         :return: File type as a string.
         """
-        return magic.from_file(self.path)
+        return puremagic.what(self.path)
 
     @property
     def hashes(self):
