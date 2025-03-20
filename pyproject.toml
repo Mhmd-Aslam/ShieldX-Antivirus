@@ -12,7 +12,9 @@ dependencies = [
     "langchain-groq>=0.2.4",
     "langchain-ollama>=0.2.3",
     "langchain-text-splitters>=0.3.6",
+    "matplotlib>=3.10.1",
     "pefile>=2024.8.26",
+    "psutil>=7.0.0",
     "pyelftools>=0.31",
     "pymilvus>=2.5.5",
     "pyside6>=6.8.2.1",
@@ -21,6 +23,5 @@ dependencies = [
     "qemu-qmp>=0.0.3",
     "requests>=2.32.3",
     "scipy>=1.15.2",
-    "sqlite-vss>=0.1.2",
     "yara-python>=4.5.1",
 ]
