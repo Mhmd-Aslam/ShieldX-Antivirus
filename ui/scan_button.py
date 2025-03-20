@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QPushButton, QLabel, QVBoxLayout, QSizePolicy, QFileDialog, QMessageBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from static.scanner import Scanner  # Import Scanner
+from scanner.scanner import Scanner  # Import Scanner
 from ui.pages.scanning import ScanningPage  # Import the new ScanningPage
 
 class ScanButton(QPushButton):
@@ -81,7 +81,7 @@ class ScanButton(QPushButton):
         else:
             # For other scan types, define the files/directories to scan (to be implemented later)
             scan_paths = []  # Placeholder for now
-            QMessageBox.information(None, "Info", f"{self.name} functionality is not implemented yet.")
+            QMessageBox.information(None, "Info", f"{self.name} not part of POC. Use custom scan.")
             return
 
         # Navigate to the ScanningPage
