@@ -1,5 +1,23 @@
 import sqlite3
 import chromadb
+import datetime
+
+class MiscDB:
+  def __init__(self):
+    self.connection = sqlite3.connect("./db/av.db")
+    self.cursor = self.connection.cursor()
+
+  def add_history(self, type, files_scanned, threats_detected):
+    self.cursor.execute("INSERT INTO scan_history(`date`, `files`, `threats`, `type`) VALUES (?,?,?,?);", (datetime.datetime.now(), files_scanned, threats_detected, type))
+    self.connection.commit()
+
+  def get_history(self):
+    result = self.cursor.execute("SELECT * from scan_history;")
+    return result.fetchall()
+
+  def __del__(self):
+    self.cursor.close()
+    self.connection.close()
 
 class ReportCache:
   def __init__(self):

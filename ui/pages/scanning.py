@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, QTimer, QTime, Signal, QObject
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtCore import QSize
 from scanner.scanner import Scanner, Directory
+from db.models import MiscDB
 import threading
 import os
 import time
@@ -407,6 +408,13 @@ class ScanningPage(QWidget):
         # Hide the pause and stop buttons after scan completion
         self.pause_button.hide()
         self.stop_button.hide()
+        
+        # Record scan history in database
+        try:
+            misc_db = MiscDB()
+            misc_db.add_history(self.scan_type, self.files_processed, self.threats_detected)
+        except Exception as e:
+            print(f"Error recording scan history: {e}")
 
     def toggle_pause(self):
         """Toggle between pause and resume."""

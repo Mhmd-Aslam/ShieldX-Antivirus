@@ -14,4 +14,12 @@ CREATE TABLE IF NOT EXISTS report_cache(
   id INTEGER PRIMARY KEY,
   `hash` TEXT NOT NULL,
   report TEXT NOT NULL
-)
+);
+
+CREATE TABLE IF NOT EXISTS scan_history(
+  id INTEGER PRIMARY KEY,
+  `date` TEXT NOT NULL,
+  files INTEGER DEFAULT 0,
+  threats INTEGER DEFAULT 0,
+  `type` TEXT NOT NULL
+);

@@ -3,7 +3,8 @@ from PySide6.QtWidgets import (
     QHeaderView, QLineEdit, QPushButton, QComboBox
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QShowEvent
+from db.models import MiscDB  # Import MiscDB class
 
 class ScanHistoryPage(QWidget):
     def __init__(self):
@@ -131,20 +132,28 @@ class ScanHistoryPage(QWidget):
         self.populate_table()
 
     def populate_table(self):
-        # Sample scan history data
-        scan_data = [
-            ["Quick Scan", "2023-10-01", "150", "0", "Completed"],
-            ["Full Scan", "2023-10-02", "5000", "2", "Completed"],
-            ["Custom Scan", "2023-10-03", "200", "1", "Completed"],
-            ["Removable Scan", "2023-10-04", "50", "0", "Completed"],
-            ["Quick Scan", "2023-10-05", "300", "0", "Completed"],
-            ["Full Scan", "2023-10-06", "7000", "3", "Completed"],
-            ["Custom Scan", "2023-10-07", "250", "0", "Completed"],
-            ["Removable Scan", "2023-10-08", "100", "1", "Completed"],
-        ]
-
-        self.scan_table.setRowCount(len(scan_data))
-        for row, data in enumerate(scan_data):
+        # Get scan history from database
+        db = MiscDB()
+        scan_history = db.get_history()
+        print(scan_history)
+        
+        if not scan_history:
+            # If no history is available, show empty table
+            self.scan_table.setRowCount(0)
+            return
+        
+        self.scan_table.setRowCount(len(scan_history))
+        for row, record in enumerate(scan_history):
+            # Map database fields to table columns
+            # record format: (id, date, files, threats, type)
+            scan_type = record[4]  # type
+            date = record[1]       # date
+            files = str(record[2]) # files
+            threats = str(record[3]) # threats
+            status = "Completed"   # Default status
+            
+            # Create table items
+            data = [scan_type, date, files, threats, status]
             for col, value in enumerate(data):
                 item = QTableWidgetItem(value)
                 item.setTextAlignment(Qt.AlignCenter)
@@ -169,3 +178,9 @@ class ScanHistoryPage(QWidget):
                     match = False
 
             self.scan_table.setRowHidden(row, not match)
+
+    def showEvent(self, event: QShowEvent):
+        """Override showEvent to refresh data when the page becomes visible"""
+        super().showEvent(event)
+        # Refresh the table data every time the page is shown
+        self.populate_table()
