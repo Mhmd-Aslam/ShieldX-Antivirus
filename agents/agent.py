@@ -49,16 +49,19 @@ class MalwareAgent:
       return False
 
     closest_matches = self.check_embeddings()
-    for match in closest_matches:
-      print(match[0]['distance'])
-      if match[0]['distance'] > 0.9:
-        return True
-      
+    print(closest_matches)
+    
+    # Properly handle ChromaDB results which come as a dictionary
+    # with 'distances' as a list of distance values
+    if closest_matches and 'distances' in closest_matches and len(closest_matches['distances']) > 0:
+      # Lower distance means higher similarity in cosine similarity
+      # Using 0.1 threshold (meaning 90% similarity)
+      for distance in closest_matches['distances'][0]:
+        if distance < 0.1:  # Cosine distance is low (high similarity)
+          return True
+    
     reasoned_report = self.analyze_report()
     if reasoned_report['is_malware'] and reasoned_report['confidence'] > 60:
       return True
     
     return False
-
-  def die(self):
-    self.vector_db.close()
