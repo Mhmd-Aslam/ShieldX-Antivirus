@@ -374,6 +374,13 @@ class ScanningPage(QWidget):
         self.results_table.setItem(row_position, 1, status_item)
         self.results_table.setItem(row_position, 2, threat_item)
 
+        # Sort the table to bring threats to the top
+        self.sort_table_by_threats()
+
+    def sort_table_by_threats(self):
+        """Sort the table to bring infected files to the top."""
+        self.results_table.sortItems(1, Qt.DescendingOrder)  # Sort by "Status" column (1) in descending order
+
     def on_scan_completed(self, results):
         # Called when scan is fully complete
         self.timer.stop()
