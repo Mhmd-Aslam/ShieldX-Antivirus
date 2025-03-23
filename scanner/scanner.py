@@ -62,44 +62,77 @@ class Scanner:
   def __init__(self):
     self.hash_db = HashDB()
 
-  def quick_scan(self, root: Directory):
-    # Scan files in the current directory
-    for file_path in root.files:
-      analyzer = StaticAnalyzer(file_path)
+  def quick_scan(self, path):
+    """
+    Recursively scan a directory for malware using hash matching.
+    
+    Args:
+        path: Path to file or directory to scan
+    """
+    if os.path.isfile(path):
+      # Scan individual file
+      analyzer = StaticAnalyzer(path)
       malware_hash_matches = self.hash_db.find_malware_hash(analyzer.hashes["sha256"])
 
       if len(malware_hash_matches) > 0:
         yield {
-          "path": file_path
+          "path": path,
+          "malware": True
         }
+      else:
+        yield {
+          "path": path,
+          "malware": False
+        }
+    elif os.path.isdir(path):
+      # Scan all items in directory
+      for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+        yield from self.quick_scan(item_path)
 
-    # Recursively scan all child directories
-    for child_dir in root.children:
-      yield from self.quick_scan(child_dir)
-
-  def full_scan(self, root: Directory):
-    for file_path in root.files:
-      analyzer = StaticAnalyzer(file_path)
+  def full_scan(self, path):
+    """
+    Recursively perform full scan of a directory with hash matching and agent analysis.
+    
+    Args:
+        path: Path to file or directory to scan
+    """
+    if os.path.isfile(path):
+      # Scan individual file
+      analyzer = StaticAnalyzer(path)
       safe_hash_matches = self.hash_db.find_safe_hash(analyzer.hashes["sha256"])
       malware_hash_matches = self.hash_db.find_malware_hash(analyzer.hashes["sha256"])
 
-      print(f"Scanning ${file_path}")
+      print(f"Scanning {path}")
 
       if len(safe_hash_matches) > 0:
         print("Safe hash found")
-        continue
+        yield {
+          "path": path,
+          "malware": False
+        }
+        return
 
       if len(malware_hash_matches) > 0:
         print("Malware hash found")
         yield {
-          "path": file_path
+          "path": path,
+          "malware": True
         }
       else:
-        agent = MalwareAgent(file_path)
+        agent = MalwareAgent(path)
         if agent.is_malware():
           yield {
-            "path": file_path
+            "path": path,
+            "malware": True
           }
-
-    for child_dir in root.children:
-      yield from self.full_scan(child_dir)
+        else:
+          yield {
+            "path": path,
+            "malware": False
+          }
+    elif os.path.isdir(path):
+      # Scan all items in directory
+      for item in os.listdir(path):
+        item_path = os.path.join(path, item)
+        yield from self.full_scan(item_path)

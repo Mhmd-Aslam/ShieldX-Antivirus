@@ -22,62 +22,67 @@ class ScannerWorker(QObject):
         self.is_running = False
         
     def run_scan(self):
+        # Only proceed if not already running
+        if self.is_running:
+            return
+            
         self.is_running = True
         results = []
         total_files = 0
         processed_files = 0
         threats_found = 0
         
-        # Create the scanner inside the thread where it will be used
         self.scanner = Scanner()
         
-        # Prepare directories for scanning
-        directories = []
+        # Count total files to scan for progress calculation
         for path in self.scan_paths:
-            if os.path.isdir(path):
-                directories.append(Directory.generate_directory_tree(path))
-            else:
-                # Handle single file scan if needed
-                pass
+            if os.path.isfile(path):
+                total_files += 1
+            elif os.path.isdir(path):
+                for root, _, files in os.walk(path):
+                    total_files += len(files)
         
-        # Count total files to scan (approximate)
-        for directory in directories:
-            for root, _, files in os.walk(directory.path):
-                total_files += len(files)
-        
-        # Run the full scan
-        for directory in directories:
-            for malware_info in self.scanner.full_scan(directory):
-                if not self.is_running:
-                    break
-                
-                processed_files += 1
-                threats_found += 1
-                results.append(malware_info)
-                
-                # Calculate progress percentage
-                progress = int((processed_files / total_files) * 100) if total_files > 0 else 0
-                progress = min(progress, 100)  # Ensure we don't exceed 100%
-                
-                # Emit progress signal with scan details
-                self.progress_updated.emit(
-                    progress, 
-                    threats_found, 
-                    {"path": malware_info["path"], "status": "Infected", "threat": "Malware"}
-                )
-                
-                # Small sleep to avoid UI freezing
-                time.sleep(0.01)
-                
+        # Perform the scan
+        for path in self.scan_paths:
             if not self.is_running:
                 break
+                
+            for result in self.scanner.full_scan(path):
+                if not self.is_running:
+                    break
+                    
+                processed_files += 1
+                
+                # Check if malware was found
+                is_malware = result.get('malware', False)
+                if is_malware:
+                    threats_found += 1
+                
+                # Calculate progress percentage
+                progress_percent = min(int((processed_files / total_files) * 100), 100)
+                
+                # Prepare file info for UI update
+                file_info = {
+                    "path": result["path"],
+                    "status": "Infected" if is_malware else "Clean",
+                    "threat": "Malware Detected" if is_malware else "None"
+                }
+                
+                # Emit signal to update UI
+                self.progress_updated.emit(progress_percent, threats_found, file_info)
+                
+                # Add to results list
+                results.append(result)
+                
+                # Small delay to prevent UI freezing
+                time.sleep(0.01)
         
-        # Complete the scan if still running
+        # Complete the scan
         if self.is_running:
             self.scan_completed.emit(results)
         
         self.is_running = False
-        
+
     def stop(self):
         self.is_running = False
 
@@ -229,6 +234,11 @@ class ScanningPage(QWidget):
         self.start_scan()
 
     def start_scan(self):
+        # Prevent starting multiple scans
+        if hasattr(self, 'scan_thread') and self.scan_thread and self.scan_thread.is_alive():
+            print("Scan already in progress, not starting another one")
+            return
+            
         # Create a worker and thread for scanning
         self.scanner_worker = ScannerWorker(self.scan_paths)
         self.scanner_worker.progress_updated.connect(self.update_real_progress)
@@ -240,6 +250,8 @@ class ScanningPage(QWidget):
         self.scan_thread.start()
         
         # Start a timer just to update the elapsed time
+        if hasattr(self, 'timer'):
+            self.timer.stop()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_elapsed_time)
         self.timer.start(1000)  # Update time every second

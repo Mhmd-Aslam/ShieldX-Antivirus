@@ -1,5 +1,5 @@
 import sqlite3
-from pymilvus import MilvusClient, DataType
+import chromadb
 
 class ReportCache:
   def __init__(self):
@@ -45,55 +45,31 @@ class HashDB:
 
 class VectorDB:
   def __init__(self):
-    # Use local file for storage instead of server connection
-    self.client = MilvusClient(uri="./db/embeddings.db")
-
-    # Check if collection exists, if not create it with proper schema
-    if not self.client.has_collection(collection_name="malware_vectors"):
-      # Define schema with primary key and vector field
-      schema = self.client.create_schema()
-
-      schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True, auto_id=True)
-      schema.add_field(field_name="hash", datatype=DataType.VARCHAR, max_length=100)
-      schema.add_field(field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=768)
-
-      index_params = self.client.prepare_index_params()
-      index_params.add_index(
-        field_name="embedding",
-        index_type="AUTOINDEX",
-        metric_type="COSINE"
-      )
-
-      # Create collection with specified metric type
-      self.client.create_collection(
-        collection_name="malware_vectors",
-        schema=schema,
-        index_params=index_params
-      )
+    # Use ChromaDB persistent client
+    self.client = chromadb.PersistentClient(path="./db/embedding_db")
+    
+    # Get or create collection
+    try:
+        self.collection = self.client.get_collection(name="malware_vectors")
+    except:
+        self.collection = self.client.create_collection(
+            name="malware_vectors",
+            metadata={"hnsw:space": "cosine"}  # Using cosine similarity
+        )
 
   def insert_malware_embedding(self, embedding: list, hash_value: str = ""):
-    # Insert with proper data structure (embedding needs to be in a field)
-    data = {
-      "hash": hash_value,
-      "embedding": embedding
-    }
-    self.client.insert(
-      collection_name="malware_vectors",
-      data=data
+    # Insert with ChromaDB format
+    self.collection.add(
+        embeddings=[embedding],
+        ids=[hash_value if hash_value else str(hash(str(embedding)))],
+        metadatas=[{"hash": hash_value}]
     )
 
   def find_closest_match(self, embedding: list):
-    # Properly formatted search query with parameters
-    res = self.client.search(
-      collection_name="malware_vectors",
-      data=[embedding],
-      anns_field="embedding",
-      search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
-      limit=5,
-      output_fields=["hash", "embedding"]
+    # Query using ChromaDB
+    results = self.collection.query(
+        query_embeddings=[embedding],
+        n_results=5
     )
-
-    return res
-  
-  def close(self):
-    self.client.close()
+    
+    return results
