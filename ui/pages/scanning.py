@@ -9,33 +9,34 @@ import threading
 import os
 import time
 
+
 # Worker class to handle background scanning
 class ScannerWorker(QObject):
     progress_updated = Signal(int, int, dict)
     scan_completed = Signal(list)
     scan_paused = Signal()
     scan_stopped = Signal()
-    
+
     def __init__(self, scan_paths):
         super().__init__()
         self.scan_paths = scan_paths
         self.is_running = False
         self.is_paused = False
-        
+
     def run_scan(self):
         # Only proceed if not already running
         if self.is_running:
             return
-            
+
         self.is_running = True
         self.is_paused = False
         results = []
         total_files = 0
         processed_files = 0
         threats_found = 0
-        
+
         self.scanner = Scanner()
-        
+
         # Count total files to scan for progress calculation
         for path in self.scan_paths:
             if os.path.isfile(path):
@@ -43,52 +44,52 @@ class ScannerWorker(QObject):
             elif os.path.isdir(path):
                 for root, _, files in os.walk(path):
                     total_files += len(files)
-        
+
         # Perform the scan
         for path in self.scan_paths:
             if not self.is_running:
                 break
-                
+
             for result in self.scanner.full_scan(path):
                 if not self.is_running:
                     break
-                    
+
                 # Pause the scan if requested
                 while self.is_paused:
                     time.sleep(0.1)
                     if not self.is_running:
                         break
-                
+
                 processed_files += 1
-                
+
                 # Check if malware was found
                 is_malware = result.get('malware', False)
                 if is_malware:
                     threats_found += 1
-                
+
                 # Calculate progress percentage
                 progress_percent = min(int((processed_files / total_files) * 100), 100)
-                
+
                 # Prepare file info for UI update
                 file_info = {
                     "path": result["path"],
                     "status": "Infected" if is_malware else "Clean",
                     "threat": "Malware Detected" if is_malware else "None"
                 }
-                
+
                 # Emit signal to update UI
                 self.progress_updated.emit(progress_percent, threats_found, file_info)
-                
+
                 # Add to results list
                 results.append(result)
-                
+
                 # Small delay to prevent UI freezing
                 time.sleep(0.01)
-        
+
         # Complete the scan
         if self.is_running:
             self.scan_completed.emit(results)
-        
+
         self.is_running = False
 
     def pause(self):
@@ -310,19 +311,23 @@ class ScanningPage(QWidget):
         if hasattr(self, 'scan_thread') and self.scan_thread and self.scan_thread.is_alive():
             print("Scan already in progress, not starting another one")
             return
-            
+
+        # Show the pause and stop buttons
+        self.pause_button.show()
+        self.stop_button.show()
+
         # Create a worker and thread for scanning
         self.scanner_worker = ScannerWorker(self.scan_paths)
         self.scanner_worker.progress_updated.connect(self.update_real_progress)
         self.scanner_worker.scan_completed.connect(self.on_scan_completed)
         self.scanner_worker.scan_paused.connect(self.on_scan_paused)
         self.scanner_worker.scan_stopped.connect(self.on_scan_stopped)
-        
+
         # Create and start a thread for scanning
         self.scan_thread = threading.Thread(target=self.scanner_worker.run_scan)
         self.scan_thread.daemon = True
         self.scan_thread.start()
-        
+
         # Start a timer just to update the elapsed time
         if hasattr(self, 'timer'):
             self.timer.stop()
@@ -339,32 +344,32 @@ class ScanningPage(QWidget):
         # Update UI with real scan progress
         self.progress_bar.setValue(progress)
         self.progress_percentage_label.setText(f"{progress}%")
-        
+
         self.files_processed += 1
         self.files_scanned_label.setText(f"Files Scanned: {self.files_processed}")
-        
+
         self.threats_detected = threats
         self.threats_detected_label.setText(f"Threats Detected: {self.threats_detected}")
-        
+
         # Add result to table
         row_position = self.results_table.rowCount()
         self.results_table.insertRow(row_position)
-        
+
         file_item = QTableWidgetItem(os.path.basename(file_info["path"]))
         status_item = QTableWidgetItem(file_info["status"])
         threat_item = QTableWidgetItem(file_info["threat"])
-        
+
         # Make items non-editable
         file_item.setFlags(file_item.flags() & ~Qt.ItemIsEditable)
         status_item.setFlags(status_item.flags() & ~Qt.ItemIsEditable)
         threat_item.setFlags(threat_item.flags() & ~Qt.ItemIsEditable)
-        
+
         # Set row colors based on status
         if file_info["status"] == "Infected":
             file_item.setBackground(Qt.red)
             status_item.setBackground(Qt.red)
             threat_item.setBackground(Qt.red)
-        
+
         self.results_table.setItem(row_position, 0, file_item)
         self.results_table.setItem(row_position, 1, status_item)
         self.results_table.setItem(row_position, 2, threat_item)
@@ -372,18 +377,18 @@ class ScanningPage(QWidget):
     def on_scan_completed(self, results):
         # Called when scan is fully complete
         self.timer.stop()
-        
+
         # Ensure progress bar is at 100%
         self.progress_bar.setValue(100)
         self.progress_percentage_label.setText("100%")
-        
+
         # Update scan info label
         self.scan_info_label.setText(f"{self.scan_type} Complete")
-        
+
         # Add or update the result label
         result_text = f"Scan Complete: {self.threats_detected} threats detected."
         text_color = "red" if self.threats_detected > 0 else "green"
-        
+
         if self.result_label is None:
             self.result_label = QLabel(result_text)
             self.result_label.setStyleSheet(f"font-size: 18px; color: {text_color};")
@@ -391,6 +396,10 @@ class ScanningPage(QWidget):
         else:
             self.result_label.setText(result_text)
             self.result_label.setStyleSheet(f"font-size: 18px; color: {text_color};")
+
+        # Hide the pause and stop buttons after scan completion
+        self.pause_button.hide()
+        self.stop_button.hide()
 
     def toggle_pause(self):
         """Toggle between pause and resume."""
@@ -412,6 +421,10 @@ class ScanningPage(QWidget):
             self.scan_info_label.setText(f"{self.scan_type} Stopped")
             self.timer.stop()
 
+            # Hide the pause and stop buttons
+            self.pause_button.hide()
+            self.stop_button.hide()
+
     def on_scan_paused(self):
         """Handle scan paused event."""
         self.scan_info_label.setText(f"{self.scan_type} Paused")
@@ -427,7 +440,7 @@ class ScanningPage(QWidget):
         if self.scanner_worker and self.scan_thread and self.scan_thread.is_alive():
             self.scanner_worker.stop()
             self.scan_thread.join(timeout=1.0)
-        
+
         # Reset progress bar and labels
         self.progress_bar.setValue(0)
         self.progress_percentage_label.setText("0%")
@@ -436,15 +449,19 @@ class ScanningPage(QWidget):
         self.elapsed_time_label.setText("Elapsed Time: 00:00")
         self.files_processed = 0
         self.threats_detected = 0
-        
+
         # Clear the results table
         self.results_table.setRowCount(0)
-        
+
         # Reset the start time
         self.start_time = QTime.currentTime()
-        
+
         # Update scan info label
         self.scan_info_label.setText(f"{self.scan_type} in Progress...")
-        
+
+        # Show the pause and stop buttons
+        self.pause_button.show()
+        self.stop_button.show()
+
         # Start the scan again
         self.start_scan()
