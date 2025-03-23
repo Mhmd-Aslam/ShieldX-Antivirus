@@ -1,10 +1,8 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QProgressBar, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton
+    QWidget, QVBoxLayout, QLabel, QProgressBar, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt, QTimer, QTime, Signal, QObject
 from PySide6.QtGui import QPixmap, QIcon
-from PySide6.QtWidgets import QPushButton
-from PySide6.QtGui import QIcon
 from PySide6.QtCore import QSize
 from scanner.scanner import Scanner, Directory
 import threading
@@ -15,11 +13,14 @@ import time
 class ScannerWorker(QObject):
     progress_updated = Signal(int, int, dict)
     scan_completed = Signal(list)
+    scan_paused = Signal()
+    scan_stopped = Signal()
     
     def __init__(self, scan_paths):
         super().__init__()
         self.scan_paths = scan_paths
         self.is_running = False
+        self.is_paused = False
         
     def run_scan(self):
         # Only proceed if not already running
@@ -27,6 +28,7 @@ class ScannerWorker(QObject):
             return
             
         self.is_running = True
+        self.is_paused = False
         results = []
         total_files = 0
         processed_files = 0
@@ -51,6 +53,12 @@ class ScannerWorker(QObject):
                 if not self.is_running:
                     break
                     
+                # Pause the scan if requested
+                while self.is_paused:
+                    time.sleep(0.1)
+                    if not self.is_running:
+                        break
+                
                 processed_files += 1
                 
                 # Check if malware was found
@@ -83,8 +91,21 @@ class ScannerWorker(QObject):
         
         self.is_running = False
 
+    def pause(self):
+        """Pause the scan."""
+        self.is_paused = True
+        self.scan_paused.emit()
+
+    def resume(self):
+        """Resume the scan."""
+        self.is_paused = False
+
     def stop(self):
+        """Stop the scan."""
         self.is_running = False
+        self.is_paused = False
+        self.scan_stopped.emit()
+
 
 class ScanningPage(QWidget):
     def __init__(self, scan_type, scan_paths, parent=None):
@@ -97,6 +118,7 @@ class ScanningPage(QWidget):
         self.scanner_worker = None
         self.files_processed = 0
         self.threats_detected = 0
+        self.is_paused = False  # Track if the scan is paused
         self.init_ui()
 
     def init_ui(self):
@@ -104,15 +126,15 @@ class ScanningPage(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(20)  # Add spacing between widgets
 
-        # Top Bar Layout (Rescan Button + Header)
+        # Top Bar Layout (Rescan Button + Header + Pause/Stop Buttons)
         top_bar_layout = QHBoxLayout()
         top_bar_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         # Rescan Button with Logo
         self.rescan_button = QPushButton()
         self.rescan_button.setIcon(QIcon("ui/logos/rescan.png"))  # Add rescan logo
-        icon_size = QSize(50, 50)
-        self.rescan_button.setIconSize(icon_size)
+        self.rescan_button.setIconSize(QSize(50, 50))  # Set icon size
+        self.rescan_button.setFixedSize(50, 50)  # Set button size
         self.rescan_button.setStyleSheet(
             """
             QPushButton {
@@ -146,6 +168,56 @@ class ScanningPage(QWidget):
         header_layout.addWidget(self.scan_info_label)
 
         top_bar_layout.addLayout(header_layout)
+
+        # Add a spacer to push the Pause and Stop buttons to the right
+        spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        top_bar_layout.addSpacerItem(spacer)
+
+        # Add Pause and Stop buttons to the top-right corner
+        button_layout = QHBoxLayout()
+        button_layout.setAlignment(Qt.AlignRight)
+
+        # Pause Button
+        self.pause_button = QPushButton()
+        self.pause_button.setIcon(QIcon("ui/logos/pause.png"))  # Add pause logo
+        self.pause_button.setIconSize(QSize(25, 25))  # Smaller icon size
+        self.pause_button.setFixedSize(50, 50)  # Same button size as rescan
+        self.pause_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #3B4A5A;
+                border-radius: 5px;
+            }
+            """
+        )
+        self.pause_button.clicked.connect(self.toggle_pause)
+        button_layout.addWidget(self.pause_button)
+
+        # Stop Button
+        self.stop_button = QPushButton()
+        self.stop_button.setIcon(QIcon("ui/logos/stop.png"))  # Add stop logo
+        self.stop_button.setIconSize(QSize(25, 25))  # Smaller icon size
+        self.stop_button.setFixedSize(50, 50)  # Same button size as rescan
+        self.stop_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #3B4A5A;
+                border-radius: 5px;
+            }
+            """
+        )
+        self.stop_button.clicked.connect(self.stop_scan)
+        button_layout.addWidget(self.stop_button)
+
+        top_bar_layout.addLayout(button_layout)
         layout.addLayout(top_bar_layout)
 
         # Progress Bar with Animation and Percentage
@@ -243,6 +315,8 @@ class ScanningPage(QWidget):
         self.scanner_worker = ScannerWorker(self.scan_paths)
         self.scanner_worker.progress_updated.connect(self.update_real_progress)
         self.scanner_worker.scan_completed.connect(self.on_scan_completed)
+        self.scanner_worker.scan_paused.connect(self.on_scan_paused)
+        self.scanner_worker.scan_stopped.connect(self.on_scan_stopped)
         
         # Create and start a thread for scanning
         self.scan_thread = threading.Thread(target=self.scanner_worker.run_scan)
@@ -317,6 +391,35 @@ class ScanningPage(QWidget):
         else:
             self.result_label.setText(result_text)
             self.result_label.setStyleSheet(f"font-size: 18px; color: {text_color};")
+
+    def toggle_pause(self):
+        """Toggle between pause and resume."""
+        if self.scanner_worker:
+            if self.is_paused:
+                self.scanner_worker.resume()
+                self.pause_button.setIcon(QIcon("ui/logos/pause.png"))
+                self.scan_info_label.setText(f"{self.scan_type} in Progress...")
+            else:
+                self.scanner_worker.pause()
+                self.pause_button.setIcon(QIcon("ui/logos/resume.png"))
+                self.scan_info_label.setText(f"{self.scan_type} Paused")
+            self.is_paused = not self.is_paused
+
+    def stop_scan(self):
+        """Stop the scan."""
+        if self.scanner_worker:
+            self.scanner_worker.stop()
+            self.scan_info_label.setText(f"{self.scan_type} Stopped")
+            self.timer.stop()
+
+    def on_scan_paused(self):
+        """Handle scan paused event."""
+        self.scan_info_label.setText(f"{self.scan_type} Paused")
+
+    def on_scan_stopped(self):
+        """Handle scan stopped event."""
+        self.scan_info_label.setText(f"{self.scan_type} Stopped")
+        self.timer.stop()
 
     def rescan(self):
         """Resets the scan and starts it again."""
