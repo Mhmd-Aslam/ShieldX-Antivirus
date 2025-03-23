@@ -34,7 +34,10 @@ class StaticAnalyzer:
         :param path: Path to the file.
         :return: File type as a string.
         """
-        return puremagic.what(path)
+        try:
+            return puremagic.what(path)
+        except Exception:
+            return None
     
     @property
     def file_type(self):
@@ -43,7 +46,10 @@ class StaticAnalyzer:
         
         :return: File type as a string.
         """
-        return puremagic.what(self.path)
+        try:
+            return puremagic.what(self.path)
+        except Exception:
+            return None
 
     @property
     def hashes(self):
