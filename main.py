@@ -1,7 +1,7 @@
 from scanner.scanner import Scanner
 
 def main():
-    scan_path = "/home/milan"
+    scan_path = "./tests"
     print(f"Starting scan of {scan_path}")
     
     scanner = Scanner()

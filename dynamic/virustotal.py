@@ -12,15 +12,23 @@ class Client:
     self.apiKey = os.getenv("VT_API_KEY")
 
     with open(self.file, "rb") as f:
-      response = requests.post("https://www.virustotal.com/api/v3/files", headers={
+      #get upload url
+      upload_url_response = requests.get("https://www.virustotal.com/api/v3/files/upload_url", headers={
+        "accept": "application/json",
+        "x-apikey": self.apiKey
+      })
+
+      upload_url_data = upload_url_response.json()
+
+      response = requests.post(upload_url_data["data"], headers={
         "accept": "application/json",
         "x-apikey": self.apiKey
       }, files={
         "file": f.read()
       })
 
+      print(response.text)
       data = response.json()
-      print(data)
 
       self.analysisId = data["data"]["id"]
 
@@ -30,6 +38,7 @@ class Client:
       })
 
       self.hash = hash_response.json()["meta"]["file_info"]
+      print(self.hash)
 
   def behaviour_reports(self):
     response = requests.get(f"https://www.virustotal.com/api/v3/file_behaviours/{self.hash["sha256"]}_Zenbox", headers={
