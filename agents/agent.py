@@ -1,9 +1,8 @@
-import scipy.spatial
 from agents.report import ReportGenerator
 from agents.summarizer import summarizer_agent
 from agents.reasoner import reason_malware_report
 from agents.embedder import generate_embeddings
-from db.models import HashDB, VectorDB, ReportCache
+from db.models import HashDB, VectorDB, ReportCache, MiscDB
 
 class MalwareAgent:
   def __init__(self, path):
@@ -11,6 +10,7 @@ class MalwareAgent:
     self.report_generator = ReportGenerator(self.path)
     self.vector_db = VectorDB()
     self.hash_db = HashDB()
+    self.misc_db = MiscDB()
     self.cache = ReportCache()
     self.embeddings = None
     self.summary = None
@@ -48,20 +48,27 @@ class MalwareAgent:
     if not self.report_generator.scannable:
       return False
 
-    closest_matches = self.check_embeddings()
-    print(closest_matches)
-    
-    # Properly handle ChromaDB results which come as a dictionary
-    # with 'distances' as a list of distance values
-    if closest_matches and 'distances' in closest_matches and len(closest_matches['distances']) > 0:
-      # Lower distance means higher similarity in cosine similarity
-      # Using 0.1 threshold (meaning 90% similarity)
-      for distance in closest_matches['distances'][0]:
-        if distance < 0.1:  # Cosine distance is low (high similarity)
-          return True
-    
-    reasoned_report = self.analyze_report()
-    if reasoned_report['is_malware'] and reasoned_report['confidence'] > 60:
-      return True
-    
+    try:
+      closest_matches = self.check_embeddings()
+      print(closest_matches)
+      
+      # Properly handle ChromaDB results which come as a dictionary
+      # with 'distances' as a list of distance values
+      if closest_matches and 'distances' in closest_matches and len(closest_matches['distances']) > 0:
+        # Lower distance means higher similarity in cosine similarity
+        # Using 0.1 threshold (meaning 90% similarity)
+        for distance in closest_matches['distances'][0]:
+          if distance < 0.1:  # Cosine distance is low (high similarity)
+            return True
+      
+      reasoned_report = self.analyze_report()
+      if reasoned_report['is_malware'] and reasoned_report['confidence'] > 60:
+        print("Updating threat database")
+        self.misc_db.add_threat(reasoned_report["malware_family"], reasoned_report["description"], reasoned_report["confidence"])
+        self.vector_db.insert_malware_embedding(self.embeddings)
+        return True
+      
+    except Exception:
+      pass
+
     return False

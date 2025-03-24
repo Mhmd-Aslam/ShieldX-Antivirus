@@ -37,7 +37,7 @@ CLASSIFICATION RULES:
 
 RESULT FORMAT:
 <result>
-{{"is_malware": boolean,"confidence": number (0-100),"malware_family": string}}
+{{"is_malware": boolean,"confidence": number (0-100),"malware_family": string,"description": string}}
 </result>
 """
 
