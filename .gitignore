@@ -15,6 +15,6 @@ sandbox/images/*
 
 # Databases
 
-av.db
-embedding_db
+db/av.db
+db/embedding_db
 
