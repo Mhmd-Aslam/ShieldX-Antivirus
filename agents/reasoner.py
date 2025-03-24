@@ -34,6 +34,7 @@ CLASSIFICATION RULES:
    - Each confirmed malicious behavior: +15-20%
    - Multiple indicators correlating to known malware family: +25%
 4. Only classify as malware if confidence exceeds 70% with concrete supporting evidence
+5. If you're not sure what the malware family is, make an educated guess.
 
 RESULT FORMAT:
 <result>

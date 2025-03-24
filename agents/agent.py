@@ -68,7 +68,8 @@ class MalwareAgent:
         self.vector_db.insert_malware_embedding(self.embeddings)
         return True
       
-    except Exception:
-      pass
+    except Exception as e:
+      print(e)
+      return True
 
     return False
