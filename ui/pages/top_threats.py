@@ -3,10 +3,12 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from db.models import MiscDB
 
 class TopThreatsPage(QWidget):
     def __init__(self):
         super().__init__()
+        self.threats_layout = None  # Store layout reference
         self.init_ui()
 
     def init_ui(self):
@@ -41,11 +43,11 @@ class TopThreatsPage(QWidget):
         )
 
         # Create a container widget for the scroll area
-        container = QWidget()
-        scroll_area.setWidget(container)
+        self.container = QWidget()
+        scroll_area.setWidget(self.container)
 
         # Main layout for the container
-        layout = QVBoxLayout(container)
+        layout = QVBoxLayout(self.container)
         layout.setContentsMargins(20, 20, 20, 20)  # Add margins
         layout.setSpacing(20)  # Add spacing between widgets
 
@@ -61,31 +63,56 @@ class TopThreatsPage(QWidget):
         subtitle_label.setStyleSheet("color: #ECF0F1;")  # Light gray for text
         layout.addWidget(subtitle_label)
 
-        # Threats layout
-        threats_layout = QVBoxLayout()
-        threats_layout.setSpacing(15)
-
-        # Sample threats data
-        threats = [
-            {"name": "Trojan Horse", "severity": 90, "description": "A malicious program disguised as legitimate software."},
-            {"name": "Ransomware", "severity": 85, "description": "Encrypts files and demands payment for decryption."},
-            {"name": "Phishing Attack", "severity": 75, "description": "Attempts to steal sensitive information through fake emails."},
-            {"name": "Spyware", "severity": 70, "description": "Secretly monitors user activity and collects data."},
-            {"name": "Adware", "severity": 60, "description": "Displays unwanted advertisements and tracks user behavior."},
-            {"name": "Worm", "severity": 80, "description": "Spreads across networks without user interaction."},
-        ]
-
-        # Add threat cards
-        for threat in threats:
-            threat_card = self.create_threat_card(threat["name"], threat["severity"], threat["description"])
-            threats_layout.addWidget(threat_card)
-
-        layout.addLayout(threats_layout)
+        # Threats layout - store as class variable
+        self.threats_layout = QVBoxLayout()
+        self.threats_layout.setSpacing(15)
+        layout.addLayout(self.threats_layout)
 
         # Set the scroll area as the main layout of the page
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(scroll_area)
         self.setLayout(main_layout)
+        
+        # Initial update
+        self.update_threats()
+
+    def update_threats(self):
+        """Update threats from database and refresh the UI"""
+        # Clear existing threat cards
+        self.clear_threats()
+        
+        # Get threats from database
+        db = MiscDB()
+        threat_records = db.get_threats()
+        
+        # Format threat data from the database
+        # threat_records format: (id, type, severity, description)
+        threats = []
+        for record in threat_records:
+            threats.append({
+                "name": record[1],  # type column
+                "severity": record[2],  # severity column
+                "description": record[3]  # description column
+            })
+
+        # Add threat cards
+        for threat in threats:
+            threat_card = self.create_threat_card(threat["name"], threat["severity"], threat["description"])
+            self.threats_layout.addWidget(threat_card)
+    
+    def clear_threats(self):
+        """Clear all threat cards from the layout"""
+        if self.threats_layout:
+            while self.threats_layout.count():
+                item = self.threats_layout.takeAt(0)
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
+    
+    def showEvent(self, event):
+        """Override showEvent to update threats whenever page is shown"""
+        self.update_threats()
+        super().showEvent(event)
 
     def create_threat_card(self, name, severity, description):
         """Create a card for a threat with a name, severity progress bar, and description."""

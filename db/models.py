@@ -15,6 +15,14 @@ class MiscDB:
     result = self.cursor.execute("SELECT * from scan_history;")
     return result.fetchall()
 
+  def add_threat(self, type, description, severity):
+    self.cursor.execute("INSERT INTO threat_history(`type`, `description`, `severity`) VALUES (?,?,?);", (type, description, severity))
+    self.connection.commit()
+
+  def get_threats(self):
+    result = self.cursor.execute("SELECT * from threat_history;")
+    return result.fetchall()
+
   def __del__(self):
     self.cursor.close()
     self.connection.close()

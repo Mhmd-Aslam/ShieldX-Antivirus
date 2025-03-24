@@ -23,3 +23,10 @@ CREATE TABLE IF NOT EXISTS scan_history(
   threats INTEGER DEFAULT 0,
   `type` TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS threat_history(
+  id INTEGER PRIMARY KEY,
+  `type` TEXT NOT NULL,
+  severity INTEGER DEFAULT 0,
+  `description` TEXT NOT NULL
+);
