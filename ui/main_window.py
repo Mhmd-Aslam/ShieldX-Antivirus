@@ -11,10 +11,9 @@ from ui.pages.summary import SummaryPage
 from ui.pages.top_threats import TopThreatsPage
 from ui.pages.system_health import SystemHealthPage
 from ui.pages.security_analytics import GraphPage
-from ui.pages.settings import SettingsPage
 from ui.pages.about import AboutPage
 from ui.pages.dashboard import DashboardPage
-from ui.pages.scanning import ScanningPage  # Import ScanningPage
+from ui.pages.scanning import ScanningPage
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -64,7 +63,7 @@ class MainWindow(QMainWindow):
         # Add header layout to sidebar
         sidebar_layout.addLayout(logo_name_layout)
 
-        # Create QStackedWidget for pages
+        # Create QStackedWidget for pages (excluding Settings page)
         self.stacked_widget = QStackedWidget()
         self.pages = {
             "Dashboard": DashboardPage(self),
@@ -73,7 +72,6 @@ class MainWindow(QMainWindow):
             "Top Threats": TopThreatsPage(),
             "System Health": SystemHealthPage(),
             "Security Analytics": GraphPage(),
-            "Settings": SettingsPage(),
             "About": AboutPage(),
             # "Scanning": ScanningPage(scan_type="", scan_paths=[]),  # ScanningPage initialized dynamically
         }
@@ -81,7 +79,7 @@ class MainWindow(QMainWindow):
         for name, page in self.pages.items():
             self.stacked_widget.addWidget(page)
 
-        # Sidebar Buttons
+        # Sidebar Buttons (excluding Settings)
         self.page_buttons = {}
         for label in self.pages.keys():
             button = QPushButton(label)
@@ -96,7 +94,7 @@ class MainWindow(QMainWindow):
         add_files_button = QPushButton(" Add Files \n to Scan \n +")
         add_files_button.setStyleSheet(self.add_files_button_style())
         add_files_button.setFixedSize(110, 150)
-        add_files_button.clicked.connect(self.open_file_dialog)  # Connect button to open file dialog
+        add_files_button.clicked.connect(self.open_file_dialog)
         sidebar_layout.addWidget(add_files_button, alignment=Qt.AlignCenter)
 
         sidebar.setLayout(sidebar_layout)
@@ -165,8 +163,8 @@ class MainWindow(QMainWindow):
             scan_button.clicked.connect(lambda: self.set_active_page("Scanning", scan_button))
             self.page_buttons["Scanning"] = scan_button
             sidebar_layout = self.centralWidget().layout().itemAt(0).itemAt(0).widget().layout()
-            sidebar_layout.insertWidget(sidebar_layout.count() - 1, scan_button)  # Use count() instead of len()
-            self.scan_button_added = True  # Mark that the Scanning button has been added
+            sidebar_layout.insertWidget(sidebar_layout.count() - 1, scan_button)
+            self.scan_button_added = True
 
         # Navigate to ScanningPage
         self.set_active_page("Scanning", self.page_buttons["Scanning"])
