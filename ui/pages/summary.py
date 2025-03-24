@@ -4,6 +4,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QFont, QShowEvent
 from db.models import MiscDB  # Import MiscDB class
+from datetime import datetime  # For date and time formatting
+
 
 class SummaryPage(QWidget):
     def __init__(self):
@@ -118,6 +120,18 @@ class SummaryPage(QWidget):
 
         return card
 
+    def format_date_time(self, timestamp):
+        """Format the timestamp into 'dd/mm/yyyy hr/min AM/PM' format."""
+        try:
+            # Parse the timestamp including microseconds
+            dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+            # Format it as 'dd/mm/yyyy hr/min AM/PM'
+            formatted_date = dt.strftime("%d/%m/%Y %I:%M %p")
+            return formatted_date
+        except Exception as e:
+            print(f"Error formatting date: {e}")
+            return timestamp  # Return the original timestamp if formatting fails
+
     def create_recent_scans_table(self):
         """Create a table to display recent scans."""
         table_frame = QFrame()
@@ -150,7 +164,7 @@ class SummaryPage(QWidget):
         # Limit to most recent 3 scans
         recent_scans = []
         if scan_history:
-            recent_scans = sorted(scan_history, key=lambda x: x[1], reverse=True)[:3]
+            recent_scans = sorted(scan_history, key=lambda x: datetime.strptime(x[1], "%Y-%m-%d %H:%M:%S.%f"), reverse=True)[:3]
         
         # Add rows
         for scan in recent_scans:
@@ -158,9 +172,9 @@ class SummaryPage(QWidget):
             
             # Format scan data for display
             scan_type = scan[4]  # type
-            date = scan[1]       # date
-            files = str(scan[2]) # files
-            threats = str(scan[3]) # threats
+            date = self.format_date_time(scan[1])  # Format date and time
+            files = str(scan[2])  # files
+            threats = str(scan[3])  # threats
             status = "Completed"  # Default status
             
             scan_data = [scan_type, date, files, threats, status]

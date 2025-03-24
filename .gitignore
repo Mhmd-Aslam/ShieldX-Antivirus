@@ -11,3 +11,10 @@ wheels/
 *.json
 sandbox/images/*
 .env
+
+
+# Databases
+
+db/av.db
+db/embedding_db
+
