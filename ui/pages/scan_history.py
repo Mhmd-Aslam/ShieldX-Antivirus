@@ -145,7 +145,6 @@ class ScanHistoryPage(QWidget):
         # Get scan history from database
         db = MiscDB()
         scan_history = db.get_history()
-        print(scan_history)  # Debugging: Print the fetched history
 
         if not scan_history:
             # If no history is available, show empty table
