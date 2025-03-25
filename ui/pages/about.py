@@ -19,7 +19,7 @@ class AboutPage(QWidget):
         layout.addWidget(logo_label, alignment=Qt.AlignCenter)
 
         # Application Name
-        app_name_label = QLabel("Fytra Antivirus")
+        app_name_label = QLabel("ShieldX Antivirus")
         app_name_label.setStyleSheet("font-size: 32px; font-weight: bold; color: #4CAF50;")
         layout.addWidget(app_name_label, alignment=Qt.AlignCenter)
 
@@ -69,12 +69,12 @@ class AboutPage(QWidget):
         layout.addWidget(closing_label)
 
         # Developer Information
-        developer_label = QLabel("Developed by Fytra Technologies")
+        developer_label = QLabel("Developed by ShieldX Technologies")
         developer_label.setStyleSheet("font-size: 14px; color: #888;")
         layout.addWidget(developer_label, alignment=Qt.AlignCenter)
 
         # Contact Information
-        contact_label = QLabel("Contact: support@fytra.com | Website: www.fytra.com")
+        contact_label = QLabel("Contact: support@shieldx.com | Website: www.shieldx.com")
         contact_label.setStyleSheet("font-size: 14px; color: #888;")
         layout.addWidget(contact_label, alignment=Qt.AlignCenter)
 
