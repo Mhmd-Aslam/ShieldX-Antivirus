@@ -1,9 +1,44 @@
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame, QSizePolicy, QFileDialog
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, 
+                              QFrame, QSizePolicy, QFileDialog, QDialog, QListWidget, 
+                              QDialogButtonBox)
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from ui.notification_dialog import NotificationDialog
 from ui.scan_button import ScanButton
 import os
+import psutil
+
+class RemovableDeviceDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Removable Devices to Scan")
+        self.setFixedSize(400, 300)
+        
+        layout = QVBoxLayout(self)
+        
+        self.device_list = QListWidget()
+        self.device_list.setSelectionMode(QListWidget.MultiSelection)
+        layout.addWidget(self.device_list)
+        
+        # Get removable drives
+        self.removable_drives = []
+        for partition in psutil.disk_partitions():
+            if 'removable' in partition.opts.lower():
+                self.removable_drives.append(partition.mountpoint)
+                self.device_list.addItem(partition.mountpoint)
+        
+        if not self.removable_drives:
+            self.device_list.addItem("No removable devices found")
+            self.device_list.setEnabled(False)
+        
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+    
+    def get_selected_devices(self):
+        selected_items = self.device_list.selectedItems()
+        return [item.text() for item in selected_items]
 
 class DashboardPage(QWidget):
     def __init__(self, main_window):
@@ -75,7 +110,7 @@ class DashboardPage(QWidget):
 
         # Removable Scan button
         self.removable_scan_button = ScanButton("ui/logos/Removable_Scan.png", "Removable Scan")
-        self.removable_scan_button.start_scan_signal.connect(self.main_window.start_scan)
+        self.removable_scan_button.start_scan_signal.connect(self.handle_removable_scan)
         scan_layout.addWidget(self.removable_scan_button)
 
         # Custom Scan button
@@ -91,19 +126,22 @@ class DashboardPage(QWidget):
 
     def handle_quick_scan(self, scan_type, scan_paths):
         """Handle quick scan by scanning common system locations"""
-        # Define common system locations to scan
         quick_scan_paths = [
             os.path.expanduser("~/.local/share"),
             os.path.expanduser("~/Downloads"),
             os.path.expanduser("~/Desktop"),
             "/tmp"
         ]
-        
-        # Filter to only existing paths
         existing_paths = [path for path in quick_scan_paths if os.path.exists(path)]
-        
-        # Start the scan with the filtered paths
         self.main_window.start_scan(scan_type, existing_paths)
+
+    def handle_removable_scan(self, scan_type, scan_paths):
+        """Handle removable scan by showing device selection dialog"""
+        dialog = RemovableDeviceDialog(self)
+        if dialog.exec() == QDialog.Accepted:
+            selected_devices = dialog.get_selected_devices()
+            if selected_devices:
+                self.main_window.start_scan(scan_type, selected_devices)
 
     def show_notification_dialog(self):
         if not self.notification_dialog:
