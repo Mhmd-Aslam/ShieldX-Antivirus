@@ -1,6 +1,8 @@
-from PySide6.QtWidgets import (QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, 
-                              QFrame, QSizePolicy, QFileDialog, QDialog, QListWidget, 
-                              QDialogButtonBox)
+from PySide6.QtWidgets import (
+    QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, 
+    QFrame, QSizePolicy, QFileDialog, QDialog, QListWidget, 
+    QDialogButtonBox, QMessageBox
+)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from ui.notification_dialog import NotificationDialog
@@ -105,7 +107,7 @@ class DashboardPage(QWidget):
 
         # Full Scan button
         self.full_scan_button = ScanButton("ui/logos/Full_Scan.png", "Full Scan")
-        self.full_scan_button.start_scan_signal.connect(self.main_window.start_scan)
+        self.full_scan_button.start_scan_signal.connect(self.handle_full_scan)
         scan_layout.addWidget(self.full_scan_button)
 
         # Removable Scan button
@@ -133,7 +135,49 @@ class DashboardPage(QWidget):
             "/tmp"
         ]
         existing_paths = [path for path in quick_scan_paths if os.path.exists(path)]
+        if not existing_paths:
+            QMessageBox.warning(self, "No Paths Found", "No quick scan paths were accessible")
+            return
         self.main_window.start_scan(scan_type, existing_paths)
+
+    def handle_full_scan(self, scan_type, scan_paths):
+        """Handle full scan of the entire system with protected paths excluded"""
+        if os.name == 'nt':  # Windows
+            scan_paths = ['C:\\']
+            # Exclude known protected Windows paths
+            excluded_paths = [
+                'C:\\Windows\\',
+                'C:\\$Recycle.Bin\\',
+                'C:\\System Volume Information\\',
+                'C:\\$MfeDeepRem\\',
+                'C:\\Program Files\\WindowsApps\\'
+            ]
+        else:  # Linux/Mac
+            scan_paths = ['/']
+            # Exclude protected Unix paths
+            excluded_paths = [
+                '/proc/',
+                '/sys/',
+                '/dev/',
+                '/snap/'
+            ]
+        
+        # Filter out excluded paths
+        scan_paths = [p for p in scan_paths if not any(p.startswith(excl) for excl in excluded_paths)]
+        
+        if not scan_paths:
+            QMessageBox.warning(self, "No Paths Found", "No valid full scan paths were accessible")
+            return
+            
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Full Scan",
+            "Full system scan may take a long time and impact system performance. Continue?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if confirm == QMessageBox.Yes:
+            self.main_window.start_scan(scan_type, scan_paths)
 
     def handle_removable_scan(self, scan_type, scan_paths):
         """Handle removable scan by showing device selection dialog"""

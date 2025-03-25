@@ -13,9 +13,12 @@ class Directory:
         self.path = path
         self.children = children
         self.parent = parent
-        self.files = [os.path.join(self.path, file_path) 
-                     for file_path in os.listdir(self.path) 
-                     if not os.path.isdir(os.path.join(self.path, file_path))]
+        try:
+            self.files = [os.path.join(self.path, file_path) 
+                         for file_path in os.listdir(self.path) 
+                         if not os.path.isdir(os.path.join(self.path, file_path))]
+        except PermissionError:
+            self.files = []
 
     def get_directory_hash(self):
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -31,21 +34,30 @@ class Directory:
                     hasher.update(chunk)
                     
             return hasher.hexdigest()
+        except Exception as e:
+            print(f"Error hashing directory {self.path}: {e}")
+            return None
         finally:
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
 
     @staticmethod
     def generate_directory_tree(path, parent=None):
-        current_dir = Directory(path=path, children=[], parent=parent)
-        
-        for item in os.listdir(path):
-            item_path = os.path.join(path, item)
-            if os.path.isdir(item_path):
-                child_dir = Directory.generate_directory_tree(item_path, parent=current_dir)
-                current_dir.children.append(child_dir)
-        
-        return current_dir
+        try:
+            current_dir = Directory(path=path, children=[], parent=parent)
+            
+            for item in os.listdir(path):
+                try:
+                    item_path = os.path.join(path, item)
+                    if os.path.isdir(item_path):
+                        child_dir = Directory.generate_directory_tree(item_path, parent=current_dir)
+                        current_dir.children.append(child_dir)
+                except PermissionError:
+                    continue
+            
+            return current_dir
+        except PermissionError:
+            return Directory(path=path, children=[], parent=parent)
 
 class Scanner:
     def __init__(self):
@@ -78,54 +90,16 @@ class Scanner:
         return [d for d in drives if os.path.exists(d)]
 
     def quick_scan(self, path):
-        if os.path.isfile(path):
-            analyzer = StaticAnalyzer(path)
-            malware_hash_matches = self.hash_db.find_malware_hash(analyzer.hashes["sha256"])
+        try:
+            if os.path.isfile(path):
+                analyzer = StaticAnalyzer(path)
+                malware_hash_matches = self.hash_db.find_malware_hash(analyzer.hashes["sha256"])
 
-            if len(malware_hash_matches) > 0:
-                yield {
-                    "path": path,
-                    "malware": True,
-                    "type": "Known malware (hash match)"
-                }
-            else:
-                yield {
-                    "path": path,
-                    "malware": False,
-                    "type": "Clean"
-                }
-        elif os.path.isdir(path):
-            for item in os.listdir(path):
-                item_path = os.path.join(path, item)
-                yield from self.quick_scan(item_path)
-
-    def full_scan(self, path):
-        if os.path.isfile(path):
-            analyzer = StaticAnalyzer(path)
-            safe_hash_matches = self.hash_db.find_safe_hash(analyzer.hashes["sha256"])
-            malware_hash_matches = self.hash_db.find_malware_hash(analyzer.hashes["sha256"])
-
-            if len(safe_hash_matches) > 0:
-                yield {
-                    "path": path,
-                    "malware": False,
-                    "type": "Known safe (hash match)"
-                }
-                return
-
-            if len(malware_hash_matches) > 0:
-                yield {
-                    "path": path,
-                    "malware": True,
-                    "type": "Known malware (hash match)"
-                }
-            else:
-                agent = MalwareAgent(path)
-                if agent.is_malware():
+                if len(malware_hash_matches) > 0:
                     yield {
                         "path": path,
                         "malware": True,
-                        "type": "Suspicious behavior"
+                        "type": "Known malware (hash match)"
                     }
                 else:
                     yield {
@@ -133,31 +107,105 @@ class Scanner:
                         "malware": False,
                         "type": "Clean"
                     }
-        elif os.path.isdir(path):
-            for item in os.listdir(path):
-                item_path = os.path.join(path, item)
-                yield from self.full_scan(item_path)
+            elif os.path.isdir(path):
+                for item in os.listdir(path):
+                    item_path = os.path.join(path, item)
+                    yield from self.quick_scan(item_path)
+        except PermissionError:
+            yield {
+                "path": path,
+                "malware": False,
+                "type": "Access denied"
+            }
+
+    def full_scan(self, path):
+        try:
+            if os.path.isfile(path):
+                analyzer = StaticAnalyzer(path)
+                safe_hash_matches = self.hash_db.find_safe_hash(analyzer.hashes["sha256"])
+                malware_hash_matches = self.hash_db.find_malware_hash(analyzer.hashes["sha256"])
+
+                if len(safe_hash_matches) > 0:
+                    yield {
+                        "path": path,
+                        "malware": False,
+                        "type": "Known safe (hash match)"
+                    }
+                    return
+
+                if len(malware_hash_matches) > 0:
+                    yield {
+                        "path": path,
+                        "malware": True,
+                        "type": "Known malware (hash match)"
+                    }
+                else:
+                    agent = MalwareAgent(path)
+                    if agent.is_malware():
+                        yield {
+                            "path": path,
+                            "malware": True,
+                            "type": "Suspicious behavior"
+                        }
+                    else:
+                        yield {
+                            "path": path,
+                            "malware": False,
+                            "type": "Clean"
+                        }
+            elif os.path.isdir(path):
+                try:
+                    for item in os.listdir(path):
+                        try:
+                            item_path = os.path.join(path, item)
+                            yield from self.full_scan(item_path)
+                        except PermissionError:
+                            yield {
+                                "path": item_path,
+                                "malware": False,
+                                "type": "Access denied"
+                            }
+                except PermissionError:
+                    yield {
+                        "path": path,
+                        "malware": False,
+                        "type": "Access denied"
+                    }
+        except Exception as e:
+            print(f"Error scanning {path}: {e}")
+            yield {
+                "path": path,
+                "malware": False,
+                "type": "Scan error"
+            }
 
     def removable_scan(self, path):
         # Check for suspicious files
         suspicious_files = ['autorun.inf', 'desktop.ini', 'thumbs.db']
-        if os.path.isdir(path):
-            for suspicious in suspicious_files:
-                file_path = os.path.join(path, suspicious)
-                if os.path.exists(file_path):
-                    yield {
-                        "path": file_path,
-                        "malware": True,
-                        "type": "Suspicious system file"
-                    }
+        try:
+            if os.path.isdir(path):
+                for suspicious in suspicious_files:
+                    file_path = os.path.join(path, suspicious)
+                    if os.path.exists(file_path):
+                        yield {
+                            "path": file_path,
+                            "malware": True,
+                            "type": "Suspicious system file"
+                        }
 
-        # Quick scan
-        yield from self.quick_scan(path)
-        
-        # Deep scan of executables
-        executable_extensions = ('.exe', '.dll', '.bat', '.cmd', '.vbs', '.js')
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if file.lower().endswith(executable_extensions):
-                    file_path = os.path.join(root, file)
-                    yield from self.full_scan(file_path)
+            # Quick scan
+            yield from self.quick_scan(path)
+            
+            # Deep scan of executables
+            executable_extensions = ('.exe', '.dll', '.bat', '.cmd', '.vbs', '.js')
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    if file.lower().endswith(executable_extensions):
+                        file_path = os.path.join(root, file)
+                        yield from self.full_scan(file_path)
+        except PermissionError:
+            yield {
+                "path": path,
+                "malware": False,
+                "type": "Access denied"
+            }
