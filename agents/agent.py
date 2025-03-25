@@ -25,6 +25,8 @@ class MalwareAgent:
       dynamic_report = self.report_generator.generate_dynamic_report()
 
       self.summary = summarizer_agent(dynamic_report["behaviour_reports"], static_report)
+      with open("summary.txt", "w") as file:
+        file.write(self.summary)
       self.cache.insert_cache(self.report_generator.hashes["sha256"], self.summary)
       print("inserted into cache")
 
@@ -54,12 +56,12 @@ class MalwareAgent:
       
       # Properly handle ChromaDB results which come as a dictionary
       # with 'distances' as a list of distance values
-      if closest_matches and 'distances' in closest_matches and len(closest_matches['distances']) > 0:
-        # Lower distance means higher similarity in cosine similarity
-        # Using 0.1 threshold (meaning 90% similarity)
-        for distance in closest_matches['distances'][0]:
-          if distance < 0.1:  # Cosine distance is low (high similarity)
-            return True
+      # if closest_matches and 'distances' in closest_matches and len(closest_matches['distances']) > 0:
+      #   # Lower distance means higher similarity in cosine similarity
+      #   # Using 0.1 threshold (meaning 90% similarity)
+      #   for distance in closest_matches['distances'][0]:
+      #     if distance < 0.1:  # Cosine distance is low (high similarity)
+      #       return True
       
       reasoned_report = self.analyze_report()
       if reasoned_report['is_malware'] and reasoned_report['confidence'] > 60:
