@@ -1,21 +1,32 @@
-from PySide6.QtWidgets import QPushButton, QLabel, QVBoxLayout, QSizePolicy, QFileDialog, QMessageBox
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QPushButton, QLabel, QVBoxLayout, QSizePolicy
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
-from scanner.scanner import Scanner  # Import Scanner
-from ui.pages.scanning import ScanningPage  # Import the new ScanningPage
 
 class ScanButton(QPushButton):
+    # Signal to emit when scan should start
+    start_scan_signal = Signal(str, list)  # scan_type, paths
+    
     def __init__(self, icon_path, name, parent=None):
         super().__init__(parent)
         self.icon_path = icon_path
         self.name = name
-        self.scanner = Scanner()  # Initialize the scanner
         self.init_ui()
         
-        # Only connect the button click if it's not a Custom Scan button
-        if self.name != "Custom Scan":
-            self.clicked.connect(self.start_scan)  # Connect button click to scan function
-
+        # Connect button click to emit signal
+        self.clicked.connect(self.handle_scan_click)
+    
+    def handle_scan_click(self):
+        """Handle scan button click based on scan type"""
+        if self.name == "Quick Scan":
+            # For quick scan, we don't need any paths - it will scan default locations
+            self.start_scan_signal.emit("Quick Scan", [])
+        elif self.name == "Custom Scan":
+            # Custom scan will be handled by DashboardPage
+            pass
+        else:
+            # Other scan types (Full Scan, Removable Scan)
+            self.start_scan_signal.emit(self.name, [])
+    
     def init_ui(self):
         self.setFixedSize(180, 130)
         self.setStyleSheet(self.default_style())
@@ -70,20 +81,3 @@ class ScanButton(QPushButton):
         self.icon_label.setStyleSheet("background-color: #2E3A48;")
         self.text_label.setStyleSheet("font-size: 16px; color: white; background-color: #2E3A48;")
         super().leaveEvent(event)
-
-    def start_scan(self):
-        """
-        Determine which files to scan based on the button type and navigate to the ScanningPage.
-        """
-        if self.name == "Custom Scan":
-            # Custom Scan logic is handled in DashboardPage, so do nothing here
-            return
-        else:
-            # For other scan types, define the files/directories to scan (to be implemented later)
-            scan_paths = []  # Placeholder for now
-            QMessageBox.information(None, "Info", f"{self.name} not part of POC. Use custom scan.")
-            return
-
-        # Navigate to the ScanningPage
-        scanning_page = ScanningPage(scan_type=self.name, scan_paths=scan_paths)
-        self.parent().parent().setCentralWidget(scanning_page)  # Assuming the parent is a QMainWindow

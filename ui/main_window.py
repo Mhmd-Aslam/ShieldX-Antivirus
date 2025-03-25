@@ -1,9 +1,10 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
-    QFrame, QStackedWidget, QFileDialog
+    QFrame, QStackedWidget, QFileDialog, QMessageBox
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import Qt  
+from PySide6.QtGui import QIcon, QPixmap 
+import os
 
 # Import pages
 from ui.pages.scan_history import ScanHistoryPage
@@ -11,10 +12,9 @@ from ui.pages.summary import SummaryPage
 from ui.pages.top_threats import TopThreatsPage
 from ui.pages.system_health import SystemHealthPage
 from ui.pages.security_analytics import GraphPage
-from ui.pages.settings import SettingsPage
 from ui.pages.about import AboutPage
 from ui.pages.dashboard import DashboardPage
-from ui.pages.scanning import ScanningPage  # Import ScanningPage
+from ui.pages.scanning import ScanningPage
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -24,8 +24,8 @@ class MainWindow(QMainWindow):
         self.resize(1200, 700)
         self.setStyleSheet("background-color: #091e36; color: white;")
 
-        self.active_button = None  # Track the currently active button
-        self.scan_button_added = False  # Track if the Scanning button has been added
+        self.active_button = None
+        self.scan_button_added = False
 
         # Main Layout
         main_layout = QVBoxLayout()
@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
         )
         sidebar_layout = QVBoxLayout()
 
-        # Sidebar Header (Logo + App Name)
+        # Sidebar Header
         logo_name_layout = QHBoxLayout()
         logo_name_layout.setSpacing(10)
         logo_name_layout.setContentsMargins(10, 0, 10, 0)
@@ -56,12 +56,9 @@ class MainWindow(QMainWindow):
         app_name.setStyleSheet("font-size: 20px; font-weight: bold; color: white;")
         app_name.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
-        # Add widgets to the layout
         logo_name_layout.addWidget(app_logo)
         logo_name_layout.addWidget(app_name)
         logo_name_layout.addStretch()
-
-        # Add header layout to sidebar
         sidebar_layout.addLayout(logo_name_layout)
 
         # Create QStackedWidget for pages
@@ -73,9 +70,7 @@ class MainWindow(QMainWindow):
             "Top Threats": TopThreatsPage(),
             "System Health": SystemHealthPage(),
             "Security Analytics": GraphPage(),
-            "Settings": SettingsPage(),
             "About": AboutPage(),
-            # "Scanning": ScanningPage(scan_type="", scan_paths=[]),  # ScanningPage initialized dynamically
         }
 
         for name, page in self.pages.items():
@@ -92,11 +87,11 @@ class MainWindow(QMainWindow):
 
         sidebar_layout.addStretch()
 
-        # "Add Files to Scan" Button
+        # "Add Files to Scan" Button (for single files only)
         add_files_button = QPushButton(" Add Files \n to Scan \n +")
         add_files_button.setStyleSheet(self.add_files_button_style())
         add_files_button.setFixedSize(110, 150)
-        add_files_button.clicked.connect(self.open_file_dialog)  # Connect button to open file dialog
+        add_files_button.clicked.connect(self.open_file_dialog)
         sidebar_layout.addWidget(add_files_button, alignment=Qt.AlignCenter)
 
         sidebar.setLayout(sidebar_layout)
@@ -129,7 +124,6 @@ class MainWindow(QMainWindow):
         self.set_active_page("Dashboard", self.page_buttons["Dashboard"])
 
     def set_active_page(self, page_name, button):
-        """Sets the active page and updates the button styling."""
         if self.active_button:
             self.active_button.setStyleSheet(self.sidebar_button_style())
         self.active_button = button
@@ -137,16 +131,23 @@ class MainWindow(QMainWindow):
         self.stacked_widget.setCurrentWidget(self.pages[page_name])
 
     def open_file_dialog(self):
-        """Opens a file/directory selection dialog for adding files to scan."""
-        file_paths, _ = QFileDialog.getOpenFileNames(self, "Select Files to Scan")
-        if file_paths:
-            print(f"Selected files: {file_paths}")  # Debugging output
-            # Add functionality to handle selected files here
+        """Open file dialog for selecting individual files to scan (no folders)"""
+        file_dialog = QFileDialog(self)
+        file_dialog.setFileMode(QFileDialog.ExistingFiles)
+        file_dialog.setNameFilter("All Files (*)")
+        
+        if file_dialog.exec():
+            selected_files = file_dialog.selectedFiles()
+            if selected_files:
+                # Verify all selected paths are files (not folders)
+                valid_files = [f for f in selected_files if os.path.isfile(f)]
+                if valid_files:
+                    self.start_scan("File Scan", valid_files)
+                else:
+                    QMessageBox.warning(self, "Warning", "Please select files only (not folders)")
 
     def start_scan(self, scan_type, scan_paths):
-        """Start a scan and navigate to the ScanningPage."""
-        print(f"Starting scan: {scan_type} on paths: {scan_paths}")  # Debugging output
-
+        """Start a scan and navigate to the ScanningPage"""
         # Remove old ScanningPage if it exists
         if "Scanning" in self.pages:
             old_page = self.pages["Scanning"]
@@ -165,8 +166,8 @@ class MainWindow(QMainWindow):
             scan_button.clicked.connect(lambda: self.set_active_page("Scanning", scan_button))
             self.page_buttons["Scanning"] = scan_button
             sidebar_layout = self.centralWidget().layout().itemAt(0).itemAt(0).widget().layout()
-            sidebar_layout.insertWidget(sidebar_layout.count() - 1, scan_button)  # Use count() instead of len()
-            self.scan_button_added = True  # Mark that the Scanning button has been added
+            sidebar_layout.insertWidget(sidebar_layout.count() - 1, scan_button)
+            self.scan_button_added = True
 
         # Navigate to ScanningPage
         self.set_active_page("Scanning", self.page_buttons["Scanning"])

@@ -1,79 +1,186 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QProgressBar
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QFont, QShowEvent
-from db.models import MiscDB  # Import MiscDB class
-from datetime import datetime  # For date and time formatting
+from db.models import MiscDB
+from datetime import datetime
 
 
 class SummaryPage(QWidget):
     def __init__(self):
         super().__init__()
+        self.setup_refresh_timer()
         self.init_ui()
 
+    def setup_refresh_timer(self):
+        """Initialize and configure the refresh timer"""
+        self.refresh_timer = QTimer(self)
+        self.refresh_timer.timeout.connect(self.refresh_page)
+        self.refresh_timer.setInterval(5000)  # 5 second refresh interval
+
     def init_ui(self):
-        # Main layout
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(20)
+        """Initialize the user interface"""
+        self.setup_main_layout()
+        self.setup_title()
+        self.setup_cards_section()
+        self.setup_recent_scans_section()
+        self.refresh_timer.start()
 
-        # Page title
-        title_label = QLabel("Summary")
-        title_label.setFont(QFont("Arial", 24, QFont.Bold))
-        title_label.setStyleSheet("color: #ECF0F1;")  # Light blue for the title
-        layout.addWidget(title_label)
+    def setup_main_layout(self):
+        """Configure the main layout of the page"""
+        if self.layout():
+            self.clear_layout(self.layout())
+        
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setSpacing(20)
 
-        # Cards layout
-        cards_layout = QHBoxLayout()
-        cards_layout.setSpacing(20)
+    def setup_title(self):
+        """Create and add the page title"""
+        self.title_label = QLabel("Summary")
+        self.title_label.setFont(QFont("Arial", 24, QFont.Bold))
+        self.title_label.setStyleSheet("color: #ECF0F1;")
+        self.main_layout.addWidget(self.title_label)
 
-        # Get summary stats from database
+    def setup_cards_section(self):
+        """Create the summary cards section"""
+        self.cards_layout = QHBoxLayout()
+        self.cards_layout.setSpacing(20)
+        self.update_cards()
+        self.main_layout.addLayout(self.cards_layout)
+
+    def setup_recent_scans_section(self):
+        """Create the recent scans section"""
+        self.recent_scans_label = QLabel("Recent Scans")
+        self.recent_scans_label.setFont(QFont("Arial", 18, QFont.Bold))
+        self.recent_scans_label.setStyleSheet("color: #ECF0F1;")
+        self.main_layout.addWidget(self.recent_scans_label)
+
+        self.recent_scans_table_frame = QFrame()
+        self.recent_scans_table_frame.setStyleSheet("""
+            QFrame {
+                background-color: #2C3E50;
+                border-radius: 10px;
+                padding: 20px;
+            }
+        """)
+        self.table_layout = QVBoxLayout(self.recent_scans_table_frame)
+        self.update_recent_scans_table()
+        self.main_layout.addWidget(self.recent_scans_table_frame)
+
+    def update_cards(self):
+        """Update the summary cards with fresh data"""
+        self.clear_layout(self.cards_layout)
         stats = self.get_summary_stats()
 
-        # Card 1: Total Scans
-        total_scans_card = self.create_card("Total Scans", "ui/logos/total_scans.png", str(stats['total_scans']))
-        cards_layout.addWidget(total_scans_card)
+        cards_data = [
+            ("Total Scans", "ui/logos/total_scans.png", str(stats['total_scans'])),
+            ("Threats Detected", "ui/logos/threats.png", str(stats['total_threats'])),
+            ("System Health", "ui/logos/system_health.png", f"{stats['system_health']}%")
+        ]
 
-        # Card 2: Threats Detected
-        threats_card = self.create_card("Threats Detected", "ui/logos/threats.png", str(stats['total_threats']))
-        cards_layout.addWidget(threats_card)
+        for title, icon_path, value in cards_data:
+            card = self.create_card(title, icon_path, value)
+            self.cards_layout.addWidget(card)
 
-        # Card 3: System Health
-        system_health_card = self.create_card("System Health", "ui/logos/system_health.png", 
-                                             f"{stats['system_health']}%")
-        cards_layout.addWidget(system_health_card)
+    def create_card(self, title, icon_path, value):
+        """Create an individual summary card"""
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: #2C3E50;
+                border-radius: 10px;
+                padding: 20px;
+            }
+        """)
+        layout = QVBoxLayout(card)
+        layout.setAlignment(Qt.AlignCenter)
 
-        layout.addLayout(cards_layout)
+        # Icon
+        icon = QLabel()
+        icon.setPixmap(QPixmap(icon_path).scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setAlignment(Qt.AlignCenter)
+        layout.addWidget(icon)
 
-        # Recent Scans Section
-        recent_scans_label = QLabel("Recent Scans")
-        recent_scans_label.setFont(QFont("Arial", 18, QFont.Bold))
-        recent_scans_label.setStyleSheet("color: #ECF0F1;")
-        layout.addWidget(recent_scans_label)
+        # Title
+        title_label = QLabel(title)
+        title_label.setFont(QFont("Arial", 16, QFont.Bold))
+        title_label.setStyleSheet("color: #ECF0F1;")
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
 
-        # Recent Scans Table
-        self.recent_scans_table_frame = self.create_recent_scans_table()
-        layout.addWidget(self.recent_scans_table_frame)
-    
+        # Value
+        value_label = QLabel(value)
+        value_label.setFont(QFont("Arial", 20, QFont.Bold))
+        value_label.setStyleSheet("color: #3498DB;")
+        value_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(value_label)
+
+        return card
+
+    def update_recent_scans_table(self):
+        """Update the recent scans table with fresh data"""
+        self.clear_layout(self.table_layout)
+        
+        # Headers
+        headers = ["Scan Type", "Date", "Files Scanned", "Threats Detected", "Status"]
+        headers_layout = QHBoxLayout()
+        
+        for header in headers:
+            header_label = QLabel(header)
+            header_label.setFont(QFont("Arial", 14, QFont.Bold))
+            header_label.setStyleSheet("color: #3498DB;")
+            header_label.setAlignment(Qt.AlignCenter)
+            headers_layout.addWidget(header_label)
+        
+        self.table_layout.addLayout(headers_layout)
+
+        # Data Rows
+        db = MiscDB()
+        scan_history = db.get_history()
+        recent_scans = sorted(
+            scan_history, 
+            key=lambda x: datetime.strptime(x[1], "%Y-%m-%d %H:%M:%S.%f"), 
+            reverse=True
+        )[:3] if scan_history else []
+
+        for scan in recent_scans:
+            row_layout = QHBoxLayout()
+            scan_data = [
+                scan[4],  # Scan Type
+                self.format_date_time(scan[1]),  # Date
+                str(scan[2]),  # Files Scanned
+                str(scan[3]),  # Threats Detected
+                "Completed"  # Status
+            ]
+            
+            for item in scan_data:
+                item_label = QLabel(item)
+                item_label.setFont(QFont("Arial", 12))
+                item_label.setStyleSheet("color: #ECF0F1;")
+                item_label.setAlignment(Qt.AlignCenter)
+                row_layout.addWidget(item_label)
+            
+            self.table_layout.addLayout(row_layout)
+
+        if not recent_scans:
+            no_data_label = QLabel("No scan history available")
+            no_data_label.setFont(QFont("Arial", 12))
+            no_data_label.setStyleSheet("color: #ECF0F1;")
+            no_data_label.setAlignment(Qt.AlignCenter)
+            self.table_layout.addWidget(no_data_label)
+
     def get_summary_stats(self):
-        """Calculate summary statistics from the database"""
+        """Calculate summary statistics from database"""
         db = MiscDB()
         scan_history = db.get_history()
         
-        # Calculate statistics
         total_scans = len(scan_history)
+        total_threats = sum(scan[3] for scan in scan_history)
         
-        total_threats = 0
-        for scan in scan_history:
-            # Threats are in index 3 of the record
-            total_threats += scan[3]
-        
-        # Simple system health calculation (just an example)
-        # Higher is better, max 100%
         system_health = 100
         if total_scans > 0 and total_threats > 0:
-            # Reduce health based on threat ratio
             threat_ratio = total_threats / total_scans
             system_health = max(0, int(100 - (threat_ratio * 100)))
         
@@ -83,130 +190,42 @@ class SummaryPage(QWidget):
             'system_health': system_health
         }
 
-    def create_card(self, title, icon_path, value):
-        """Create a card with an icon, title, and value."""
-        card = QFrame()
-        card.setStyleSheet(
-            """
-            QFrame {
-                background-color: #2C3E50;
-                border-radius: 10px;
-                padding: 20px;
-            }
-            """
-        )
-        card_layout = QVBoxLayout(card)
-        card_layout.setAlignment(Qt.AlignCenter)
-
-        # Icon
-        icon_label = QLabel()
-        icon_label.setPixmap(QPixmap(icon_path).scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        icon_label.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(icon_label)
-
-        # Title
-        title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 16, QFont.Bold))
-        title_label.setStyleSheet("color: #ECF0F1;")  # Light gray for text
-        title_label.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(title_label)
-
-        # Value
-        value_label = QLabel(value)
-        value_label.setFont(QFont("Arial", 20, QFont.Bold))
-        value_label.setStyleSheet("color: #3498DB;")  # Light blue for value
-        value_label.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(value_label)
-
-        return card
-
     def format_date_time(self, timestamp):
-        """Format the timestamp into 'dd/mm/yyyy hr/min AM/PM' format."""
+        """Format timestamp for display"""
         try:
-            # Parse the timestamp including microseconds
             dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
-            # Format it as 'dd/mm/yyyy hr/min AM/PM'
-            formatted_date = dt.strftime("%d/%m/%Y %I:%M %p")
-            return formatted_date
+            return dt.strftime("%d/%m/%Y %I:%M %p")
         except Exception as e:
             print(f"Error formatting date: {e}")
-            return timestamp  # Return the original timestamp if formatting fails
+            return timestamp
 
-    def create_recent_scans_table(self):
-        """Create a table to display recent scans."""
-        table_frame = QFrame()
-        table_frame.setStyleSheet(
-            """
-            QFrame {
-                background-color: #2C3E50;
-                border-radius: 10px;
-                padding: 20px;
-            }
-            """
-        )
-        table_layout = QVBoxLayout(table_frame)
+    def clear_layout(self, layout):
+        """Clear all widgets from a layout"""
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+            elif item.layout():
+                self.clear_layout(item.layout())
 
-        # Table headers
-        headers = ["Scan Type", "Date", "Files Scanned", "Threats Detected", "Status"]
-        headers_layout = QHBoxLayout()
-        for header in headers:
-            header_label = QLabel(header)
-            header_label.setFont(QFont("Arial", 14, QFont.Bold))
-            header_label.setStyleSheet("color: #3498DB;")
-            header_label.setAlignment(Qt.AlignCenter)
-            headers_layout.addWidget(header_label)
-        table_layout.addLayout(headers_layout)
-
-        # Get recent scans from database
-        db = MiscDB()
-        scan_history = db.get_history()
-        
-        # Limit to most recent 3 scans
-        recent_scans = []
-        if scan_history:
-            recent_scans = sorted(scan_history, key=lambda x: datetime.strptime(x[1], "%Y-%m-%d %H:%M:%S.%f"), reverse=True)[:3]
-        
-        # Add rows
-        for scan in recent_scans:
-            row_layout = QHBoxLayout()
-            
-            # Format scan data for display
-            scan_type = scan[4]  # type
-            date = self.format_date_time(scan[1])  # Format date and time
-            files = str(scan[2])  # files
-            threats = str(scan[3])  # threats
-            status = "Completed"  # Default status
-            
-            scan_data = [scan_type, date, files, threats, status]
-            
-            for item in scan_data:
-                item_label = QLabel(item)
-                item_label.setFont(QFont("Arial", 12))
-                item_label.setStyleSheet("color: #ECF0F1;")
-                item_label.setAlignment(Qt.AlignCenter)
-                row_layout.addWidget(item_label)
-            table_layout.addLayout(row_layout)
-        
-        # If no scans available, show message
-        if not recent_scans:
-            no_data_label = QLabel("No scan history available")
-            no_data_label.setFont(QFont("Arial", 12))
-            no_data_label.setStyleSheet("color: #ECF0F1;")
-            no_data_label.setAlignment(Qt.AlignCenter)
-            table_layout.addWidget(no_data_label)
-
-        return table_frame
-    
-    def showEvent(self, event: QShowEvent):
-        """Override showEvent to refresh data when the page becomes visible"""
-        super().showEvent(event)
-        # Refresh the page with latest data
-        self.refresh_page()
-        
     def refresh_page(self):
-        """Refresh the page with latest data from database"""
-        # Remove existing widgets
-        layout = self.layout()
-        
-        # Reinitialize UI with fresh data
-        self.init_ui()
+        """Refresh all page content"""
+        self.update_cards()
+        self.update_recent_scans_table()
+
+    def showEvent(self, event):
+        """Handle page visibility"""
+        super().showEvent(event)
+        self.refresh_timer.start()
+        self.refresh_page()
+
+    def hideEvent(self, event):
+        """Handle page hiding"""
+        super().hideEvent(event)
+        self.refresh_timer.stop()
+
+    def closeEvent(self, event):
+        """Handle window closing"""
+        self.refresh_timer.stop()
+        super().closeEvent(event)
