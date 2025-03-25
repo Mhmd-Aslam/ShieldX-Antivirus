@@ -87,12 +87,12 @@ class ReportGenerator:
       return None
 
     client = Client(self.path)
-    behaviour_reports = client.behaviour_reports()["data"]["attributes"]
-    mitre_tactics = client.mitre_tactics()["data"]["Zenbox"]
+    behaviour_reports = client.all_behaviour_reports()["data"]
+
+    print(behaviour_reports)
 
     self.dynamic_report = {
-      "behaviour_reports": behaviour_reports,
-      "attack_tactics": mitre_tactics
+      "behaviour_reports": behaviour_reports
     }
 
     return self.dynamic_report

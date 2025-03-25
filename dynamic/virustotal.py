@@ -47,8 +47,8 @@ class Client:
     })
 
     data = response.json()
-    # with open("dynamic.json", "w") as file:
-    #   file.write(json.dumps(data))
+    with open("dynamic.json", "w") as file:
+      file.write(json.dumps(data))
     return data
 
   def mitre_tactics(self):
@@ -58,3 +58,15 @@ class Client:
     })
 
     return response.json()
+  
+  def all_behaviour_reports(self):
+    response = requests.get(f" https://www.virustotal.com/api/v3/files/{self.hash["md5"]}/behaviour_summary", headers={
+      "accept": "application/json",
+      "x-apikey": self.apiKey
+    })
+
+    data = response.json()
+    with open("dynamic.json", "w") as file:
+      file.write(json.dumps(data))
+
+    return data
