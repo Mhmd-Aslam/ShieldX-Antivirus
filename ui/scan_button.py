@@ -1,14 +1,32 @@
 from PySide6.QtWidgets import QPushButton, QLabel, QVBoxLayout, QSizePolicy
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 
 class ScanButton(QPushButton):
+    # Signal to emit when scan should start
+    start_scan_signal = Signal(str, list)  # scan_type, paths
+    
     def __init__(self, icon_path, name, parent=None):
         super().__init__(parent)
         self.icon_path = icon_path
         self.name = name
         self.init_ui()
-
+        
+        # Connect button click to emit signal
+        self.clicked.connect(self.handle_scan_click)
+    
+    def handle_scan_click(self):
+        """Handle scan button click based on scan type"""
+        if self.name == "Quick Scan":
+            # For quick scan, we don't need any paths - it will scan default locations
+            self.start_scan_signal.emit("Quick Scan", [])
+        elif self.name == "Custom Scan":
+            # Custom scan will be handled by DashboardPage
+            pass
+        else:
+            # Other scan types (Full Scan, Removable Scan)
+            self.start_scan_signal.emit(self.name, [])
+    
     def init_ui(self):
         self.setFixedSize(180, 130)
         self.setStyleSheet(self.default_style())

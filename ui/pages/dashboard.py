@@ -65,20 +65,20 @@ class DashboardPage(QWidget):
 
         # Quick Scan button
         self.quick_scan_button = ScanButton("ui/logos/Quick_Scan.png", "Quick Scan")
-        self.quick_scan_button.clicked.connect(lambda: self.main_window.start_scan("Quick Scan", []))
+        self.quick_scan_button.start_scan_signal.connect(self.handle_quick_scan)
         scan_layout.addWidget(self.quick_scan_button)
 
         # Full Scan button
         self.full_scan_button = ScanButton("ui/logos/Full_Scan.png", "Full Scan")
-        self.full_scan_button.clicked.connect(lambda: self.main_window.start_scan("Full Scan", []))
+        self.full_scan_button.start_scan_signal.connect(self.main_window.start_scan)
         scan_layout.addWidget(self.full_scan_button)
 
         # Removable Scan button
         self.removable_scan_button = ScanButton("ui/logos/Removable_Scan.png", "Removable Scan")
-        self.removable_scan_button.clicked.connect(lambda: self.main_window.start_scan("Removable Scan", []))
+        self.removable_scan_button.start_scan_signal.connect(self.main_window.start_scan)
         scan_layout.addWidget(self.removable_scan_button)
 
-        # Custom Scan button (for folders)
+        # Custom Scan button
         self.custom_scan_button = ScanButton("ui/logos/Custom_Scan.png", "Custom Scan")
         self.custom_scan_button.clicked.connect(self.open_custom_scan_dialog)
         scan_layout.addWidget(self.custom_scan_button)
@@ -88,6 +88,22 @@ class DashboardPage(QWidget):
         # Initialize notification dialog
         self.notification_dialog = NotificationDialog(self.main_window)
         self.notification_dialog.hide()
+
+    def handle_quick_scan(self, scan_type, scan_paths):
+        """Handle quick scan by scanning common system locations"""
+        # Define common system locations to scan
+        quick_scan_paths = [
+            os.path.expanduser("~/.local/share"),
+            os.path.expanduser("~/Downloads"),
+            os.path.expanduser("~/Desktop"),
+            "/tmp"
+        ]
+        
+        # Filter to only existing paths
+        existing_paths = [path for path in quick_scan_paths if os.path.exists(path)]
+        
+        # Start the scan with the filtered paths
+        self.main_window.start_scan(scan_type, existing_paths)
 
     def show_notification_dialog(self):
         if not self.notification_dialog:
