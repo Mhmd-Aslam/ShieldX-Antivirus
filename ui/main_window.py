@@ -19,7 +19,7 @@ from ui.pages.scanning import ScanningPage
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Fytra Antivirus")
+        self.setWindowTitle("ShieldX Antivirus")
         self.setWindowIcon(QIcon("ui/logos/app_logo.png"))
         self.resize(1200, 700)
         self.setStyleSheet("background-color: #091e36; color: white;")
@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
 
         # Sidebar
         sidebar = QFrame()
-        sidebar.setFixedWidth(250)
+        sidebar.setFixedWidth(270)
         sidebar.setStyleSheet(
             "background-color: rgb(42, 87, 111);"
             "border-top-left-radius: 20px;"
@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
         app_logo.setAlignment(Qt.AlignCenter)
 
         # App Name
-        app_name = QLabel("Fytra Antivirus")
+        app_name = QLabel("ShieldX Antivirus")
         app_name.setStyleSheet("font-size: 20px; font-weight: bold; color: white;")
         app_name.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
