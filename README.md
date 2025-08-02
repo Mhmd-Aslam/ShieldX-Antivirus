@@ -1,98 +1,111 @@
-# ShieldX Antivirus - AI-Powered Malware Analysis System
+# ShieldX Antivirus 🛡️
 
-An intelligent antivirus system that combines static analysis, dynamic analysis, and machine learning to detect and classify malicious software.
+A **high-performance AI-powered malware analysis system** that combines static analysis, dynamic analysis, and machine learning to detect and classify malicious software with **95%+ accuracy**.
+
+---
 
 ## 🚀 Features
 
-- **AI-Powered Detection**: Machine learning models and embeddings for intelligent classification
-- **Static & Dynamic Analysis**: Examines file structure and runtime behavior
-- **Vector Database**: Semantic similarity matching for malware signatures
-- **GUI Interface**: User-friendly PySide6 graphical interface
-- **Caching System**: Efficient result caching for improved performance
-- **Threat Intelligence**: Database of known threats and malware families
+- 🤖 **AI-Powered Detection** - Machine learning models and embeddings
+- 🔍 **Static & Dynamic Analysis** - File structure and runtime behavior
+- 🧠 **Vector Database** - Semantic similarity matching
+- 🖥️ **GUI Interface** - User-friendly PySide6 application
+- ⚡ **Smart Caching** - Lightning-fast repeat scans
+- 🎯 **Threat Intelligence** - Known malware family database
+- 🔒 **Secure Sandboxing** - Safe dynamic analysis environment
 
-## 📋 Requirements
-
-- **Python**: >= 3.13
-- **Operating System**: Windows, Linux
-- **Memory**: Minimum 4GB RAM (8GB recommended)
-- **Storage**: 2GB free space for databases and models
+---
 
 ## 🛠️ Installation
 
 ```bash
-# Clone repository
 git clone https://github.com/Mhmd-Aslam/ShieldX-Antivirus.git
 cd ShieldX-Antivirus
-
-# Install dependencies
-uv sync  # or pip install -r requirements.txt
-
-# Create .env file with API keys
+uv sync
 echo "GROQ_API_KEY=your_key" > .env
-echo "OLLAMA_BASE_URL=http://localhost:11434" >> .env
-
-# Initialize databases
 python -c "from db.models import *"
 ```
 
-## 🚀 Usage
+---
 
-### GUI Application
+## 📱 Usage
+
+### **GUI Application**
+
 ```bash
 python ui/main.py
 ```
 
-### Command Line
+### **Command Line Scanning**
+
 ```bash
-# Basic scan
+# Quick scan
 python main.py
 
 # Scan specific file
 python -c "from agents.agent import MalwareAgent; print(MalwareAgent('file_path').is_malware())"
 ```
 
-### API Usage
+### **API Integration**
+
 ```python
 from agents.agent import MalwareAgent
 
-agent = MalwareAgent("/path/to/file")
-is_malicious = agent.is_malware()
-result = agent.analyze_report()
+agent = MalwareAgent("/path/to/suspicious/file")
+is_threat = agent.is_malware()
+analysis = agent.analyze_report()
 
-print(f"Malware: {result['is_malware']}")
-print(f"Confidence: {result['confidence']}%")
+print(f"Threat: {analysis['is_malware']}")
+print(f"Confidence: {analysis['confidence']}%")
+print(f"Family: {analysis.get('malware_family', 'Unknown')}")
 ```
 
-## 🏗️ Architecture
+---
 
-- **agents/**: AI analysis components (MalwareAgent, reasoner, embedder)
-- **db/**: Database models (HashDB, VectorDB, ReportCache)
-- **scanner/**: File scanning utilities
-- **static/**: Static analysis tools
-- **dynamic/**: Dynamic analysis components
-- **ui/**: PySide6 GUI interface
-- **tests/**: Test suite
+## 🧰 Tech Stack
 
-## 🔧 Key Components
+- **Python 3.13+** + **PySide6** GUI
+- **LangChain** + **ChromaDB** for AI processing
+- **YARA** + **PEfile** for static analysis
+- **Capstone** disassembly engine
+- **SQLite** + **Vector databases**
 
-**MalwareAgent**: Core analysis engine orchestrating static/dynamic analysis, AI reasoning, and vector matching.
+---
 
-**Analysis Pipeline**:
-1. File validation & hash generation
-2. Cache check for existing results
-3. Static analysis (file structure, signatures)
-4. Dynamic analysis (runtime behavior)
-5. AI reasoning with language models
-6. Vector similarity matching
-7. Comprehensive report generation
+## 🔒 Security
+
+- ✅ **Sandboxed execution** environment
+- ✅ **No malware persistence** on system
+- ✅ **Encrypted API communications**
+- ✅ **Memory-safe operations**
+- ✅ **Offline analysis** capability
+
+---
 
 ## 📊 Performance
 
-- **Speed**: 2-5 seconds per file (<1 second cached)
-- **Accuracy**: 95%+ detection rate
-- **False Positives**: <2%
-- **Memory**: 200-500MB during analysis
+- ⚡ **2-5 seconds** per file analysis
+- 🎯 **95%+ accuracy** on known threats
+- 📉 **<2% false positives** on clean files
+- 💾 **200-500MB** memory usage
+- 🚀 **<1 second** cached results
+
+---
+
+## 🏗️ Architecture
+
+```
+ShieldX-Antivirus/
+├── agents/     # AI analysis engine
+├── db/         # Database models
+├── scanner/    # File scanning utilities
+├── static/     # Static analysis tools
+├── dynamic/    # Runtime behavior analysis
+├── ui/         # PySide6 GUI
+└── tests/      # Test suite
+```
+
+---
 
 ## 🧪 Testing
 
@@ -100,16 +113,20 @@ print(f"Confidence: {result['confidence']}%")
 python -m pytest tests/
 ```
 
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create feature branch
-3. Commit changes
-4. Push and create Pull Request
+3. Make changes
+4. Submit pull request
 
-## 📝 License
+---
 
-MIT License - see [LICENSE](LICENSE) file.
+## 📄 License
+
+MIT License
 
 ---
 
