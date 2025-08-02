@@ -22,8 +22,8 @@ An intelligent antivirus system that combines static analysis, dynamic analysis,
 
 ```bash
 # Clone repository
-git clone https://github.com/Mhmd-Aslam/project-av.git
-cd project-av
+git clone https://github.com/Mhmd-Aslam/ShieldX-Antivirus.git
+cd ShieldX-Antivirus
 
 # Install dependencies
 uv sync  # or pip install -r requirements.txt
