@@ -107,6 +107,18 @@ ShieldX-Antivirus/
 
 ---
 
+## 📷 Screenshots
+
+<p align="left">
+  <img src="./ui/assets/Ss01.png" alt="Main Interface" width="30%" style="margin-right: 50px;"/>
+  <img src="./ui/assets/Ss02.png" alt="Scan Results" width="30%" style="margin-right: 50px;"/>
+  <img src="./ui/assets/Ss03.png" alt="Analysis Report" width="30%" style="margin-right: 50px;"/>
+  <img src="./ui/assets/Ss04.png" alt="Threat Detection" width="30%" style="margin-right: 50px;"/>
+  <img src="./ui/assets/Ss05.png" alt="Settings Panel" width="30%"/>
+</p>
+
+---
+
 ## 🧪 Testing
 
 ```bash
